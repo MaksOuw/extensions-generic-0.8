@@ -14,6 +14,8 @@ export function convertDate(dateString: string, source: any): Date {
         }
     })
 
+    console.log('Date : ' + String(date))
+
     if (!date || String(date) == 'Invalid Date') {
         console.log('Failed to parse chapter date! TO DEV: Please check if the entered months reflect the sites months')
         return new Date()
