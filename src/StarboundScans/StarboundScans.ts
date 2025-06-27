@@ -35,13 +35,19 @@ export class StarboundScans extends MangaStream {
 
     baseUrl: string = DOMAIN
     override language = '🇫🇷'
+    override usePostIds = false
     
     override directoryPath = 'series'
+
+    override manga_tag_selector_box = 'div.flex.flex-wrap.gap-3.justify-start.items-start'
 
     override configureSections() {
         this.homescreen_sections['popular_today'].selectorFunc = ($: CheerioAPI) => $('h2:contains(Populaire)')?.parent()?.next()
         this.homescreen_sections['latest_update'].selectorFunc = ($: CheerioAPI) => $('h2:contains(Dernières Sorties)')?.parent()?.next()
         this.homescreen_sections['new_titles'].selectorFunc = ($: CheerioAPI) => $('h2:contains(Récemment ajouté)')?.parent()?.next()
+        this.homescreen_sections['top_alltime'].enabled = false
+        this.homescreen_sections['top_monthly'].enabled = false
+        this.homescreen_sections['top_weekly'].enabled = false
     }
 
     override supportsTagExclusion = async (): Promise<boolean> => true
