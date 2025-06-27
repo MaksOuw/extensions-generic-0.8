@@ -31,15 +31,17 @@ export const LelMangaInfo: SourceInfo = {
     ]
 }
 
-export class LelManga extends MangaStream {
+export class StarboundScans extends MangaStream {
 
     baseUrl: string = DOMAIN
     override language = '🇫🇷'
     
+    override directoryPath = 'series'
+
     override configureSections() {
-        this.homescreen_sections['popular_today'].selectorFunc = ($: CheerioAPI) => $('div.bsx', $('h2:contains(Top Managa Aujourd\'hui)')?.parent()?.next())
-        this.homescreen_sections['latest_update'].selectorFunc = ($: CheerioAPI) => $('div.uta', $('h2:contains(Dernières Sorties)')?.parent()?.next())
-        this.homescreen_sections['new_titles'].enabled = false
+        this.homescreen_sections['popular_today'].selectorFunc = ($: CheerioAPI) => $('h2:contains(Populaire)')?.parent()?.next()
+        this.homescreen_sections['latest_update'].selectorFunc = ($: CheerioAPI) => $('h2:contains(Dernières Sorties)')?.parent()?.next()
+        this.homescreen_sections['new_titles'].selectorFunc = ($: CheerioAPI) => $('h2:contains(Récemment ajouté)')?.parent()?.next()
     }
 
     override supportsTagExclusion = async (): Promise<boolean> => true
