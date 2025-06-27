@@ -7,6 +7,8 @@ import {
     MangaStreamParser
 } from '../MangaStreamParser'
 
+import { decode as decodeHTMLEntity } from 'html-entities'
+import { convertDate } from '../LanguageUtils'
 
 export class StarboundScansParser extends MangaStreamParser {
     override parseChapterList($: CheerioAPI, mangaId: string, source: any): Chapter[] {
