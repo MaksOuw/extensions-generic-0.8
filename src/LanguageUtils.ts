@@ -9,7 +9,7 @@ export function convertDate(dateString: string, source: any): Date {
 
     const regex = /^(\d+)\s+(second|minute|hour|day)s?\s+ago$/i
 
-    const match = input.match(regex)
+    const match = dateString.match(regex)
     if (match) {
         const value = parseInt(match[1], 10)
         const unit = match[2].toLowerCase()
