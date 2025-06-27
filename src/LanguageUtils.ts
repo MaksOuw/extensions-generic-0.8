@@ -7,6 +7,25 @@ export function convertDate(dateString: string, source: any): Date {
     // Month formats provided by the source
     const dateMonths: Months = source.dateMonths
 
+    const regex = /^(\d+)\s+(second|minute|hour|day)s?\s+ago$/i
+
+    const match = input.match(regex)
+    if (match) {
+        const value = parseInt(match[1], 10)
+        const unit = match[2].toLowerCase()
+
+        switch (unit) {
+            case "second":
+                dateString = now.getTime() - value * 1000
+            case "minute":
+                dateString = now.getTime() - value * 60 * 1000
+            case "hour":
+                dateString = now.getTime() - value * 60 * 60 * 1000
+            case "day":
+                dateString = now.getTime() - value * 24 * 60 * 60 * 1000
+        }
+    }
+
     let date: Date | null = null
     Object.entries(dateMonths).forEach(([key, value]) => {
         if (dateString.toLowerCase().includes(value?.toLowerCase())) {
