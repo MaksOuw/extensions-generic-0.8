@@ -13,7 +13,7 @@ import {
 
 const DOMAIN = 'https://starboundscans.com'
 
-export const LelMangaInfo: SourceInfo = {
+export const StarboundScans: SourceInfo = {
     version: getExportVersion('0.0.0'),
     name: 'StarboundScans',
     description: `Extension that pulls manga from ${DOMAIN}`,
