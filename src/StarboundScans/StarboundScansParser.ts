@@ -17,10 +17,10 @@ export class StarboundScansParser extends MangaStreamParser {
         let language = source.language
 
         for (const chapter of $('div#chapters').toArray()) {
-            const title = decodeHTMLEntity($('a', chapter).attribs['title'].trim()).replace(/\s+/g, ' ')
-            const date = convertDate($('a', chapter).attribs['d'].trim(), source)
+            const title = decodeHTMLEntity($('a', chapter).attr('title').trim()).replace(/\s+/g, ' ')
+            const date = convertDate($('a', chapter).attr('d').trim(), source)
             // Set data-num attribute as id
-            const id = decodeHTMLEntity($('a', chapter).attribs['title'].trim()).replace(/Chapitre\s/g, '') ?? ''
+            const id = decodeHTMLEntity($('a', chapter).attr('title').trim()).replace(/Chapitre\s/g, '') ?? ''
             const chapterNumberRegex = id.match(/(\d+\.?\d?)+/)
             let chapterNumber = 0
             if (chapterNumberRegex && chapterNumberRegex[1]) {
