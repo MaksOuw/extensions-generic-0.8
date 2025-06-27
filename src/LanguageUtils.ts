@@ -7,6 +7,7 @@ export function convertDate(dateString: string, source: any): Date {
     // Month formats provided by the source
     const dateMonths: Months = source.dateMonths
 
+    const now = new Date();
     const regex = /^(\d+)\s+(second|minute|hour|day)s?\s+ago$/i
 
     const match = dateString.match(regex)
