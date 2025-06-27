@@ -5,7 +5,9 @@ import {
     SourceIntents
 } from '@paperback/types'
 import { CheerioAPI } from 'cheerio'
-
+import {
+    StarboundScansParser
+} from './StarboundScansParser'
 import {
     getExportVersion,
     MangaStream
@@ -49,6 +51,8 @@ export class StarboundScans extends MangaStream {
         this.homescreen_sections['top_monthly'].enabled = false
         this.homescreen_sections['top_weekly'].enabled = false
     }
+
+    override parser: StarboundScansParser = new StarboundScansParser()
 
     override supportsTagExclusion = async (): Promise<boolean> => true
 }
