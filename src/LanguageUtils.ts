@@ -1,11 +1,8 @@
-import { Months } from './MangaStreamInterfaces'
+var moment = require('moment')
 
-export function convertDate(dateString: string, source: any): Date {
+export function convertDate(dateString: string): Date {
     // Parsed date string
     dateString = dateString.toLowerCase()
-
-    // Month formats provided by the source
-    const dateMonths: Months = source.dateMonths
 
     const now = new Date();
     const regex = /^(\d+)\s+(second|minute|hour|day)s?\s+ago$/i
@@ -27,19 +24,12 @@ export function convertDate(dateString: string, source: any): Date {
         }
     }
 
-    let date: Date | null = null
-    Object.entries(dateMonths).forEach(([key, value]) => {
-        if (dateString.toLowerCase().includes(value?.toLowerCase())) {
-            date = new Date(dateString.replace(value, key ?? ''))
-        }
-    })
-
-    console.log('Date : ' + String(date))
-    console.log('Date : ' + dateString)
+    let date = moment(dateString)
 
     if (!date || String(date) == 'Invalid Date') {
         console.log('Failed to parse chapter date! TO DEV: Please check if the entered months reflect the sites months')
         return new Date()
     }
-    return date
+
+    return date.toDate()
 }

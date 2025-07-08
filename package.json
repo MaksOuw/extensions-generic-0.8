@@ -7,6 +7,7 @@
   "scripts": {
     "bundle": "npx paperback bundle",
     "serve": "npx paperback serve",
+    "watch": "npx paperback serve --watch",
     "test": "npx paperback test",
     "logcat": "npx paperback logcat --ip=192.168.1.52",
     "nodemon": "nodemon"
@@ -25,6 +26,7 @@
     "@paperback/toolchain": "^0.8.7",
     "@paperback/types": "^0.8.7",
     "cheerio": "^1.0.0",
-    "html-entities": "^2.5.2"
+    "html-entities": "^2.5.2",
+    "moment": "^2.30.1"
   }
 }

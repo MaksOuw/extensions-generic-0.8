@@ -4,7 +4,7 @@ import {
     SourceInfo,
     SourceIntents
 } from '@paperback/types'
-import { CheerioAPI } from 'cheerio'
+import * as cheerio from 'cheerio'
 import {
     StarboundScansParser
 } from './StarboundScansParser'
@@ -18,7 +18,7 @@ const DOMAIN = 'https://starboundscans.com'
 export const StarboundScansInfo: SourceInfo = {
     version: getExportVersion('0.0.0'),
     name: 'StarboundScans',
-    description: `Extension that pulls manga from ${DOMAIN}`,
+    description: `Extension that pulls webtoons from ${DOMAIN}`,
     author: 'MaksOuw',
     authorWebsite: 'http://github.com/MaksOuw',
     icon: 'icon.png',
@@ -34,7 +34,6 @@ export const StarboundScansInfo: SourceInfo = {
 }
 
 export class StarboundScans extends MangaStream {
-
     baseUrl: string = DOMAIN
     override language = '🇫🇷'
     override usePostIds = false
@@ -44,9 +43,12 @@ export class StarboundScans extends MangaStream {
     override manga_tag_selector_box = 'div.flex.flex-wrap.gap-3.justify-start.items-start'
 
     override configureSections() {
-        this.homescreen_sections['popular_today'].selectorFunc = ($: CheerioAPI) => $('h2:contains(Populaire)')?.parent()?.next()
-        this.homescreen_sections['latest_update'].selectorFunc = ($: CheerioAPI) => $('h2:contains(Dernières Sorties)')?.parent()?.next()
-        this.homescreen_sections['new_titles'].selectorFunc = ($: CheerioAPI) => $('h2:contains(Récemment ajouté)')?.parent()?.next()
+        this.homescreen_sections['popular_today'].selectorFunc = ($: cheerio.CheerioAPI) => $('button', $('h2:contains(Populaire)')?.parent()?.next())
+        this.homescreen_sections['popular_today'].getViewMoreItemsFunc = undefined
+        this.homescreen_sections['latest_update'].selectorFunc = ($: cheerio.CheerioAPI) => $('div.group', $('h2:contains(Dernières Sorties)')?.parent()?.next())
+        this.homescreen_sections['latest_update'].getViewMoreItemsFunc = (page: string) => 'latest/'
+        this.homescreen_sections['new_titles'].selectorFunc = ($: cheerio.CheerioAPI) => $('button', $('h2:contains(Récemment ajouté)')?.parent()?.next())
+        this.homescreen_sections['new_titles'].getViewMoreItemsFunc = (page: string) => `${this.directoryPath}/`
         this.homescreen_sections['top_alltime'].enabled = false
         this.homescreen_sections['top_monthly'].enabled = false
         this.homescreen_sections['top_weekly'].enabled = false
@@ -55,4 +57,18 @@ export class StarboundScans extends MangaStream {
     override parser: StarboundScansParser = new StarboundScansParser()
 
     override supportsTagExclusion = async (): Promise<boolean> => true
+
+    override async getChapterDetails(mangaId: string, chapterId: string): Promise<ChapterDetails> {
+        // Request the manga page
+        const request = App.createRequest({
+            url: await this.getUsePostIds() ? `${this.baseUrl}/?p=${mangaId}/` : `${this.baseUrl}/chapter/${mangaId}-${chapterId}/`,
+            method: 'GET'
+        })
+
+        const response = await this.requestManager.schedule(request, 1)
+        this.checkResponseError(response)
+        const $ = cheerio.load(response.data as string)
+
+        return this.parser.parseChapterDetails($, mangaId, chapterId)
+    }
 }
