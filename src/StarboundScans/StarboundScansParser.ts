@@ -26,7 +26,6 @@ export class StarboundScansParser extends MangaStreamParser {
         const author = $(`span:contains(${source.manga_selector_author}), .fmed b:contains(${source.manga_selector_author})+span, .imptdt:contains(${source.manga_selector_author}) i, tr td:contains(${source.manga_selector_author}) + td`).contents().remove().last().text().trim() // Language dependant
         const artist = $(`span:contains(${source.manga_selector_artist}), .fmed b:contains(${source.manga_selector_artist})+span, .imptdt:contains(${source.manga_selector_artist}) i, tr td:contains(${source.manga_selector_artist}) + td`).contents().remove().last().text().trim() // Language dependant
         const image = $('div.bg-cover', $('button'))
-        console.log(JSON.stringify(image))
         const description = decodeHTMLEntity($('div[itemprop="description"]  p').text().trim())
 
         const arrayTags: Tag[] = []
