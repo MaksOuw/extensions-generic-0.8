@@ -23,10 +23,10 @@ export class StarboundScansParser extends MangaStreamParser {
             titles.push(decodeHTMLEntity(title.trim()))
         }
 
-        const author = $(`span:contains(${source.manga_selector_author}), .fmed b:contains(${source.manga_selector_author})+span, .imptdt:contains(${source.manga_selector_author}) i, tr td:contains(${source.manga_selector_author}) + td`).contents().remove().last().text().trim() // Language dependant
-        const artist = $(`span:contains(${source.manga_selector_artist}), .fmed b:contains(${source.manga_selector_artist})+span, .imptdt:contains(${source.manga_selector_artist}) i, tr td:contains(${source.manga_selector_artist}) + td`).contents().remove().last().text().trim() // Language dependant
-        const image = $('div.bg-cover', $('button'))
-        const description = decodeHTMLEntity($('div[itemprop="description"]  p').text().trim())
+        const author = $(`span:contains(${source.manga_selector_author}), .fmed b:contains(${source.manga_selector_author})+span, .imptdt:contains(${source.manga_selector_author}) i, tr td:contains(${source.manga_selector_author}) + td`).parent().next().contents().remove().last().text().trim() // Language dependant
+        const artist = $(`span:contains(${source.manga_selector_artist}), .fmed b:contains(${source.manga_selector_artist})+span, .imptdt:contains(${source.manga_selector_artist}) i, tr td:contains(${source.manga_selector_artist}) + td`).parent().next().contents().remove().last().text().trim() // Language dependant
+        const image = this.getImageSrc($('div.bg-cover'))
+        const description = decodeHTMLEntity($('div[id="expand_content"] p').text().trim())
 
         const arrayTags: Tag[] = []
         for (const tag of $('a', source.manga_tag_selector_box).toArray()) {
@@ -138,5 +138,81 @@ export class StarboundScansParser extends MangaStreamParser {
         }
 
         return isLast
+    }
+
+    override async parseHomeSection($: CheerioAPI, section: HomeSectionData, source: any): Promise<PartialSourceManga[]> {
+        const items: PartialSourceManga[] = []
+
+        const mangas = section.selectorFunc($)
+        if (!mangas.length) {
+            console.log(`Unable to parse valid ${section.section.title} section!`)
+            return items
+        }
+
+        for (const manga of mangas.toArray()) {
+            const title = section.titleSelectorFunc($, manga)
+
+            const image = this.getImageSrc($('div.bg-cover', manga)) ?? ''
+
+            const subtitle = section.subtitleSelectorFunc($, manga) ?? ''
+
+            const slug: string = this.idCleaner($('a', manga).attr('href') ?? '')
+            const path: string = ($('a', manga).attr('href') ?? '').replace(/\/$/, '').split('/').slice(-2).shift() ?? ''
+            const postId = $('a', manga).attr('rel')
+            const mangaId: string = await source.getUsePostIds() ? (isNaN(Number(postId)) ? await source.slugToPostId(slug, path) : postId) : slug
+
+            if (!mangaId || !title) {
+                console.log(`Failed to parse homepage sections for ${source.baseUrl} title (${title}) mangaId (${mangaId})`)
+                continue
+            }
+
+            items.push(App.createPartialSourceManga({
+                mangaId,
+                image: image,
+                title: decodeHTMLEntity(title),
+                subtitle: decodeHTMLEntity(subtitle)
+            }))
+        }
+
+        return items
+    }
+
+    override getImageSrc(imageObj: Cheerio<Element> | undefined): string {
+        let image: string | undefined
+        if ((typeof imageObj?.attr('data-src')) != 'undefined') {
+            image = imageObj?.attr('data-src')
+        }
+        else if ((typeof imageObj?.attr('data-lazy-src')) != 'undefined') {
+            image = imageObj?.attr('data-lazy-src')
+        }
+        else if ((typeof imageObj?.attr('srcset')) != 'undefined') {
+            image = imageObj?.attr('srcset')?.split(' ')[0] ?? ''
+        }
+        else if ((typeof imageObj?.attr('src')) != 'undefined') {
+            image = imageObj?.attr('src')
+        }
+        else if ((typeof imageObj?.attr('data-cfsrc')) != 'undefined') {
+            image = imageObj?.attr('data-cfsrc')
+        }
+        else if ((typeof imageObj?.attr('style')) != 'undefined') {
+            let style = imageObj?.attr('style')
+            const match = style.match(/url\(["']?(.*?)["']?\)/);
+            if (match && match[1]) {
+                image = match[1]
+            }
+            else {
+                image = ''
+            }
+        }
+        else {
+            image = ''
+        }
+
+        image = image?.split('?resize')[0] ?? ''
+        image = image.replace(/^\/\//, 'https://')
+        image = image.replace(/^\//, 'https:/')
+
+
+        return encodeURI(decodeURI(decodeHTMLEntity(image?.trim())))
     }
 }

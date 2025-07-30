@@ -16,7 +16,7 @@ import {
 const DOMAIN = 'https://starboundscans.com'
 
 export const StarboundScansInfo: SourceInfo = {
-    version: getExportVersion('0.0.0'),
+    version: getExportVersion('1.0.0'),
     name: 'StarboundScans',
     description: `Extension that pulls webtoons from ${DOMAIN}`,
     author: 'MaksOuw',
@@ -45,9 +45,10 @@ export class StarboundScans extends MangaStream {
     override configureSections() {
         this.homescreen_sections['popular_today'].selectorFunc = ($: cheerio.CheerioAPI) => $('button', $('h2:contains(Populaire)')?.parent()?.next())
         this.homescreen_sections['popular_today'].getViewMoreItemsFunc = undefined
-        this.homescreen_sections['latest_update'].selectorFunc = ($: cheerio.CheerioAPI) => $('div.group', $('h2:contains(Dernières Sorties)')?.parent()?.next())
+        this.homescreen_sections['latest_update'].selectorFunc = ($: cheerio.CheerioAPI) => $('div.group', $('h2:contains(Dernières Sorties)')?.parent()?.parent()?.next())
         this.homescreen_sections['latest_update'].getViewMoreItemsFunc = (page: string) => 'latest/'
         this.homescreen_sections['new_titles'].selectorFunc = ($: cheerio.CheerioAPI) => $('button', $('h2:contains(Récemment ajouté)')?.parent()?.next())
+        this.homescreen_sections['new_titles'].titleSelectorFunc = this.homescreen_sections['popular_today'].titleSelectorFunc
         this.homescreen_sections['new_titles'].getViewMoreItemsFunc = (page: string) => `${this.directoryPath}/`
         this.homescreen_sections['top_alltime'].enabled = false
         this.homescreen_sections['top_monthly'].enabled = false
