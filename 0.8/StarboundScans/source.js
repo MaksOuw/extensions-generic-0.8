@@ -19964,6 +19964,29 @@ var _Sources = (() => {
       image = image.replace(/\&w\=\d*/, "");
       return encodeURI(decodeURI(decode(image?.trim())));
     }
+    async parseViewMore($2, source) {
+      const items = [];
+      for (const manga of $2("button", "div.group").toArray()) {
+        const title = $2("a", manga).attr("title");
+        const image = this.getImageSrc($2("div.w-44")) ?? "";
+        const subtitle = $2("div.epxs", manga).text().trim();
+        const slug = this.idCleaner($2("a", manga).attr("href") ?? "");
+        const path = ($2("a", manga).attr("href") ?? "").replace(/\/$/, "").split("/").slice(-2).shift() ?? "";
+        const postId = $2("a", manga).attr("rel");
+        const mangaId = await source.getUsePostIds() ? isNaN(Number(postId)) ? await source.slugToPostId(slug, path) : postId : slug;
+        if (!mangaId || !title) {
+          console.log(`Failed to parse view more homepage sections for ${source.baseUrl}`);
+          continue;
+        }
+        items.push(App.createPartialSourceManga({
+          mangaId,
+          image,
+          title: decode(title),
+          subtitle: decode(subtitle)
+        }));
+      }
+      return items;
+    }
   };
 
   // src/MangaStream.ts
