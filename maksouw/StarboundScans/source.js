@@ -19807,17 +19807,17 @@ var _Sources = (() => {
     parseMangaDetails($2, mangaId, source) {
       const titles = [];
       titles.push(decode($2("h1.entry-title").text().trim()));
-      const altTitles = $2(`span:contains(${source.manga_selector_AlternativeTitles}), b:contains(${source.manga_selector_AlternativeTitles})+span, .imptdt:contains(${source.manga_selector_AlternativeTitles}) i, h1.entry-title+span`).contents().remove().last().text().split(",");
+      const altTitles = $2(`span:contains(${source.manga_selector_AlternativeTitles}), b:contains(${source.manga_selector_AlternativeTitles})+span, .imptdt:contains(${source.manga_selector_AlternativeTitles}) i, h1.entry-title+span`).contents().text().split(",");
       for (const title of altTitles) {
         if (title == "") {
           continue;
         }
         titles.push(decode(title.trim()));
       }
-      const author = $2(`span:contains(${source.manga_selector_author}), .fmed b:contains(${source.manga_selector_author})+span, .imptdt:contains(${source.manga_selector_author}) i, tr td:contains(${source.manga_selector_author}) + td`).parent().next().contents().remove().last().text().trim();
-      const artist = $2(`span:contains(${source.manga_selector_artist}), .fmed b:contains(${source.manga_selector_artist})+span, .imptdt:contains(${source.manga_selector_artist}) i, tr td:contains(${source.manga_selector_artist}) + td`).parent().next().contents().remove().last().text().trim();
-      const image = this.getImageSrc($2("div.bg-cover"));
-      const description = decode($2('div[id="expand_content"] p').text().trim());
+      const author = $2(`span:contains(${source.manga_selector_author}), .fmed b:contains(${source.manga_selector_author})+span, .imptdt:contains(${source.manga_selector_author}) i, tr td:contains(${source.manga_selector_author}) + td`).parent().next().contents().text().trim();
+      const artist = $2(`span:contains(${source.manga_selector_artist}), .fmed b:contains(${source.manga_selector_artist})+span, .imptdt:contains(${source.manga_selector_artist}) i, tr td:contains(${source.manga_selector_artist}) + td`).parent().next().contents().text().trim();
+      const image = this.getImageSrc($2("div.w-44"));
+      const description = decode($2('div[id="expand_content"] > p').text().trim());
       const arrayTags = [];
       for (const tag of $2("a", source.manga_tag_selector_box).toArray()) {
         const label = $2(tag).text().trim();
@@ -19827,7 +19827,7 @@ var _Sources = (() => {
         }
         arrayTags.push({ id, label });
       }
-      const rawStatus = $2(`span:contains(${source.manga_selector_status}), .fmed b:contains(${source.manga_selector_status})+span, .imptdt:contains(${source.manga_selector_status}) i`).contents().remove().last().text().trim();
+      const rawStatus = $2(`span:contains(${source.manga_selector_status}), .fmed b:contains(${source.manga_selector_status})+span, .imptdt:contains(${source.manga_selector_status}) i`).parent().next().contents().text().trim();
       let status;
       switch (rawStatus.toLowerCase()) {
         case source.manga_StatusTypes.ONGOING.toLowerCase():
@@ -19961,6 +19961,7 @@ var _Sources = (() => {
       image = image?.split("?resize")[0] ?? "";
       image = image.replace(/^\/\//, "https://");
       image = image.replace(/^\//, "https:/");
+      image = image.replace(/\&w\=\d*/, "");
       return encodeURI(decodeURI(decode(image?.trim())));
     }
   };
@@ -20525,7 +20526,7 @@ Please go to the homepage of <${this.baseUrl}> and press the cloud icon.`);
   // src/StarboundScans/StarboundScans.ts
   var DOMAIN = "https://starboundscans.com";
   var StarboundScansInfo = {
-    version: getExportVersion("1.0.0"),
+    version: getExportVersion("0.0.0"),
     name: "StarboundScans",
     description: `Extension that pulls webtoons from ${DOMAIN}`,
     author: "MaksOuw",
@@ -20555,7 +20556,7 @@ Please go to the homepage of <${this.baseUrl}> and press the cloud icon.`);
     configureSections() {
       this.homescreen_sections["popular_today"].selectorFunc = ($2) => $2("button", $2("h2:contains(Populaire)")?.parent()?.next());
       this.homescreen_sections["popular_today"].getViewMoreItemsFunc = void 0;
-      this.homescreen_sections["latest_update"].selectorFunc = ($2) => $2("div.group", $2("h2:contains(Derni\xE8res Sorties)")?.parent()?.parent()?.next());
+      this.homescreen_sections["latest_update"].selectorFunc = ($2) => $2("div.group", $2("h2:contains(Derni\xE8res Sorties)")?.parent()?.parent()?.next()?.next());
       this.homescreen_sections["latest_update"].getViewMoreItemsFunc = (page) => "latest/";
       this.homescreen_sections["new_titles"].selectorFunc = ($2) => $2("button", $2("h2:contains(R\xE9cemment ajout\xE9)")?.parent()?.next());
       this.homescreen_sections["new_titles"].titleSelectorFunc = this.homescreen_sections["popular_today"].titleSelectorFunc;
@@ -20563,6 +20564,16 @@ Please go to the homepage of <${this.baseUrl}> and press the cloud icon.`);
       this.homescreen_sections["top_alltime"].enabled = false;
       this.homescreen_sections["top_monthly"].enabled = false;
       this.homescreen_sections["top_weekly"].enabled = false;
+    }
+    async getMangaDetails(mangaId) {
+      const request = App.createRequest({
+        url: `${this.baseUrl}/${this.directoryPath}/${mangaId}/`,
+        method: "GET"
+      });
+      const response = await this.requestManager.schedule(request, 1);
+      this.checkResponseError(response);
+      const $2 = load(response.data);
+      return this.parser.parseMangaDetails($2, mangaId, this);
     }
     async getChapterDetails(mangaId, chapterId) {
       const request = App.createRequest({
