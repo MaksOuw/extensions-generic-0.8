@@ -15,7 +15,7 @@ export class StarboundScansParser extends MangaStreamParser {
         const titles: string[] = []
         titles.push(decodeHTMLEntity($('h1.entry-title').text().trim()))
 
-        const altTitles = $(`span:contains(${source.manga_selector_AlternativeTitles}), b:contains(${source.manga_selector_AlternativeTitles})+span, .imptdt:contains(${source.manga_selector_AlternativeTitles}) i, h1.entry-title+span`).contents().remove().last().text().split(',') // Language dependant
+        const altTitles = $(`span:contains(${source.manga_selector_AlternativeTitles}), b:contains(${source.manga_selector_AlternativeTitles})+span, .imptdt:contains(${source.manga_selector_AlternativeTitles}) i, h1.entry-title+span`).contents().text().split(',') // Language dependant
         for (const title of altTitles) {
             if (title == '') {
                 continue
@@ -23,10 +23,10 @@ export class StarboundScansParser extends MangaStreamParser {
             titles.push(decodeHTMLEntity(title.trim()))
         }
 
-        const author = $(`span:contains(${source.manga_selector_author}), .fmed b:contains(${source.manga_selector_author})+span, .imptdt:contains(${source.manga_selector_author}) i, tr td:contains(${source.manga_selector_author}) + td`).parent().next().contents().remove().last().text().trim() // Language dependant
-        const artist = $(`span:contains(${source.manga_selector_artist}), .fmed b:contains(${source.manga_selector_artist})+span, .imptdt:contains(${source.manga_selector_artist}) i, tr td:contains(${source.manga_selector_artist}) + td`).parent().next().contents().remove().last().text().trim() // Language dependant
-        const image = this.getImageSrc($('div.bg-cover'))
-        const description = decodeHTMLEntity($('div[id="expand_content"] p').text().trim())
+        const author = $(`span:contains(${source.manga_selector_author}), .fmed b:contains(${source.manga_selector_author})+span, .imptdt:contains(${source.manga_selector_author}) i, tr td:contains(${source.manga_selector_author}) + td`).parent().next().contents().text().trim() // Language dependant
+        const artist = $(`span:contains(${source.manga_selector_artist}), .fmed b:contains(${source.manga_selector_artist})+span, .imptdt:contains(${source.manga_selector_artist}) i, tr td:contains(${source.manga_selector_artist}) + td`).parent().next().contents().text().trim() // Language dependant
+        const image = this.getImageSrc($('div.w-44'))
+        const description = decodeHTMLEntity($('div[id="expand_content"] > p').text().trim())
 
         const arrayTags: Tag[] = []
         for (const tag of $('a', source.manga_tag_selector_box).toArray()) {
@@ -38,7 +38,7 @@ export class StarboundScansParser extends MangaStreamParser {
             arrayTags.push({ id, label })
         }
 
-        const rawStatus = $(`span:contains(${source.manga_selector_status}), .fmed b:contains(${source.manga_selector_status})+span, .imptdt:contains(${source.manga_selector_status}) i`).contents().remove().last().text().trim()
+        const rawStatus = $(`span:contains(${source.manga_selector_status}), .fmed b:contains(${source.manga_selector_status})+span, .imptdt:contains(${source.manga_selector_status}) i`).parent().next().contents().text().trim()
         let status
         switch (rawStatus.toLowerCase()) {
             case source.manga_StatusTypes.ONGOING.toLowerCase():
@@ -211,7 +211,7 @@ export class StarboundScansParser extends MangaStreamParser {
         image = image?.split('?resize')[0] ?? ''
         image = image.replace(/^\/\//, 'https://')
         image = image.replace(/^\//, 'https:/')
-
+        image = image.replace(/\&w\=\d*/, '')
 
         return encodeURI(decodeURI(decodeHTMLEntity(image?.trim())))
     }

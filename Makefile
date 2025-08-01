@@ -3,3 +3,9 @@ bundle:
 
 update-bundle:
 	rm -fr maksouw/* && cp -rp bundles/* maksouw/
+
+log:
+	npm run logcat
+
+up:
+	npm run watch

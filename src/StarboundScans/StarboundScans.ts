@@ -16,7 +16,7 @@ import {
 const DOMAIN = 'https://starboundscans.com'
 
 export const StarboundScansInfo: SourceInfo = {
-    version: getExportVersion('1.0.0'),
+    version: getExportVersion('0.0.0'),
     name: 'StarboundScans',
     description: `Extension that pulls webtoons from ${DOMAIN}`,
     author: 'MaksOuw',
@@ -45,7 +45,7 @@ export class StarboundScans extends MangaStream {
     override configureSections() {
         this.homescreen_sections['popular_today'].selectorFunc = ($: cheerio.CheerioAPI) => $('button', $('h2:contains(Populaire)')?.parent()?.next())
         this.homescreen_sections['popular_today'].getViewMoreItemsFunc = undefined
-        this.homescreen_sections['latest_update'].selectorFunc = ($: cheerio.CheerioAPI) => $('div.group', $('h2:contains(Dernières Sorties)')?.parent()?.parent()?.next())
+        this.homescreen_sections['latest_update'].selectorFunc = ($: cheerio.CheerioAPI) => $('div.group', $('h2:contains(Dernières Sorties)')?.parent()?.parent()?.next()?.next())
         this.homescreen_sections['latest_update'].getViewMoreItemsFunc = (page: string) => 'latest/'
         this.homescreen_sections['new_titles'].selectorFunc = ($: cheerio.CheerioAPI) => $('button', $('h2:contains(Récemment ajouté)')?.parent()?.next())
         this.homescreen_sections['new_titles'].titleSelectorFunc = this.homescreen_sections['popular_today'].titleSelectorFunc
@@ -58,6 +58,19 @@ export class StarboundScans extends MangaStream {
     override parser: StarboundScansParser = new StarboundScansParser()
 
     override supportsTagExclusion = async (): Promise<boolean> => true
+
+    override async getMangaDetails(mangaId: string): Promise<SourceManga> {
+        const request = App.createRequest({
+            url: `${this.baseUrl}/${this.directoryPath}/${mangaId}/`,
+            method: 'GET'
+        })
+
+        const response = await this.requestManager.schedule(request, 1)
+        this.checkResponseError(response)
+        const $ = cheerio.load(response.data as string)
+
+        return this.parser.parseMangaDetails($, mangaId, this)
+    }
 
     override async getChapterDetails(mangaId: string, chapterId: string): Promise<ChapterDetails> {
         // Request the manga page
