@@ -215,4 +215,33 @@ export class StarboundScansParser extends MangaStreamParser {
 
         return encodeURI(decodeURI(decodeHTMLEntity(image?.trim())))
     }
+
+    override async parseViewMore($: CheerioAPI, source: any): Promise<PartialSourceManga[]> {
+        const items: PartialSourceManga[] = []
+
+        for (const manga of $('button', 'div.group').toArray()) {
+            const title = $('a', manga).attr('title')
+            const image = this.getImageSrc($('div.w-44')) ?? ''
+            const subtitle = $('div.epxs', manga).text().trim()
+
+            const slug: string = this.idCleaner($('a', manga).attr('href') ?? '')
+            const path: string = ($('a', manga).attr('href') ?? '').replace(/\/$/, '').split('/').slice(-2).shift() ?? ''
+            const postId = $('a', manga).attr('rel')
+            const mangaId: string = await source.getUsePostIds() ? (isNaN(Number(postId)) ? await source.slugToPostId(slug, path) : postId) : slug
+
+            if (!mangaId || !title) {
+                console.log(`Failed to parse view more homepage sections for ${source.baseUrl}`)
+                continue
+            }
+
+            items.push(App.createPartialSourceManga({
+                mangaId,
+                image: image,
+                title: decodeHTMLEntity(title),
+                subtitle: decodeHTMLEntity(subtitle)
+            }))
+        }
+
+        return items
+    }
 }
