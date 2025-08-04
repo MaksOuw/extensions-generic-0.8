@@ -19863,7 +19863,7 @@ var _Sources = (() => {
     parseChapterList($2, mangaId, source) {
       const chapters = [];
       let sortingIndex = 0;
-      let language = source.language;
+      const language = source.language;
       for (const chapter of $2("div#chapters > a").toArray()) {
         const title = decode($2(chapter).attr("title").trim()).replace(/\s+/g, " ");
         const date = convertDate($2(chapter).attr("d").trim());
@@ -19948,7 +19948,7 @@ var _Sources = (() => {
       } else if (typeof imageObj?.attr("data-cfsrc") != "undefined") {
         image = imageObj?.attr("data-cfsrc");
       } else if (typeof imageObj?.attr("style") != "undefined") {
-        let style = imageObj?.attr("style");
+        const style = imageObj?.attr("style");
         const match = style.match(/url\(["']?(.*?)["']?\)/);
         if (match && match[1]) {
           image = match[1];
@@ -19969,7 +19969,6 @@ var _Sources = (() => {
       for (const manga of $2("button", "div.group").toArray()) {
         const title = $2("a", manga).attr("title");
         const image = this.getImageSrc($2("div.w-44")) ?? "";
-        const subtitle = $2("div.epxs", manga).text().trim();
         const slug = this.idCleaner($2("a", manga).attr("href") ?? "");
         const path = ($2("a", manga).attr("href") ?? "").replace(/\/$/, "").split("/").slice(-2).shift() ?? "";
         const postId = $2("a", manga).attr("rel");
@@ -19982,7 +19981,7 @@ var _Sources = (() => {
           mangaId,
           image,
           title: decode(title),
-          subtitle: decode(subtitle)
+          subtitle: ""
         }));
       }
       return items;
@@ -20072,7 +20071,7 @@ var _Sources = (() => {
   }
 
   // src/MangaStream.ts
-  var BASE_VERSION = "3.1.1";
+  var BASE_VERSION = "0.0.0";
   var getExportVersion = (EXTENSION_VERSION) => {
     return BASE_VERSION.split(".").map((x, index2) => Number(x) + Number(EXTENSION_VERSION.split(".")[index2])).join(".");
   };
@@ -20549,7 +20548,7 @@ Please go to the homepage of <${this.baseUrl}> and press the cloud icon.`);
   // src/StarboundScans/StarboundScans.ts
   var DOMAIN = "https://starboundscans.com";
   var StarboundScansInfo = {
-    version: getExportVersion("0.0.0"),
+    version: getExportVersion("0.1.1"),
     name: "StarboundScans",
     description: `Extension that pulls webtoons from ${DOMAIN}`,
     author: "MaksOuw",
