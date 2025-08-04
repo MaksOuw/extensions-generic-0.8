@@ -19814,8 +19814,8 @@ var _Sources = (() => {
         }
         titles.push(decode(title.trim()));
       }
-      const author = $2(`span:contains(${source.manga_selector_author}), .fmed b:contains(${source.manga_selector_author})+span, .imptdt:contains(${source.manga_selector_author}) i, tr td:contains(${source.manga_selector_author}) + td`).parent().next().contents().text().trim();
-      const artist = $2(`span:contains(${source.manga_selector_artist}), .fmed b:contains(${source.manga_selector_artist})+span, .imptdt:contains(${source.manga_selector_artist}) i, tr td:contains(${source.manga_selector_artist}) + td`).parent().next().contents().text().trim();
+      const author = $2(`span:contains(${source.manga_selector_author})`).parent().next().contents().text().trim();
+      const artist = $2(`span:contains(${source.manga_selector_artist})`).parent().next().contents().text().trim();
       const image = this.getImageSrc($2("div.w-44"));
       const description = decode($2('div[id="expand_content"] > p').text().trim());
       const arrayTags = [];
@@ -19827,7 +19827,7 @@ var _Sources = (() => {
         }
         arrayTags.push({ id, label });
       }
-      const rawStatus = $2(`span:contains(${source.manga_selector_status}), .fmed b:contains(${source.manga_selector_status})+span, .imptdt:contains(${source.manga_selector_status}) i`).parent().next().contents().text().trim();
+      const rawStatus = $2(`span:contains(${source.manga_selector_status})`).parent().next().contents().text().trim();
       let status;
       switch (rawStatus.toLowerCase()) {
         case source.manga_StatusTypes.ONGOING.toLowerCase():
@@ -20548,7 +20548,7 @@ Please go to the homepage of <${this.baseUrl}> and press the cloud icon.`);
   // src/StarboundScans/StarboundScans.ts
   var DOMAIN = "https://starboundscans.com";
   var StarboundScansInfo = {
-    version: getExportVersion("0.1.1"),
+    version: getExportVersion("0.1.2"),
     name: "StarboundScans",
     description: `Extension that pulls webtoons from ${DOMAIN}`,
     author: "MaksOuw",
