@@ -18,7 +18,7 @@ import {
 const DOMAIN = 'https://starboundscans.com'
 
 export const StarboundScansInfo: SourceInfo = {
-    version: getExportVersion('0.1.1'),
+    version: getExportVersion('0.1.2'),
     name: 'StarboundScans',
     description: `Extension that pulls webtoons from ${DOMAIN}`,
     author: 'MaksOuw',
