@@ -1,8 +1,10 @@
 import {
     BadgeColor,
+    ChapterDetails,
     ContentRating,
     SourceInfo,
-    SourceIntents
+    SourceIntents,
+    SourceManga
 } from '@paperback/types'
 import * as cheerio from 'cheerio'
 import {
@@ -16,7 +18,7 @@ import {
 const DOMAIN = 'https://starboundscans.com'
 
 export const StarboundScansInfo: SourceInfo = {
-    version: getExportVersion('0.0.0'),
+    version: getExportVersion('0.1.1'),
     name: 'StarboundScans',
     description: `Extension that pulls webtoons from ${DOMAIN}`,
     author: 'MaksOuw',
@@ -37,7 +39,7 @@ export class StarboundScans extends MangaStream {
     baseUrl: string = DOMAIN
     override language = '🇫🇷'
     override usePostIds = false
-    
+
     override directoryPath = 'series'
 
     override manga_tag_selector_box = 'div.flex.flex-wrap.gap-3.justify-start.items-start'

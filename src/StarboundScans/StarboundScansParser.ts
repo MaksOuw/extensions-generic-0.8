@@ -1,12 +1,22 @@
 import {
-    ChapterDetails
+    Chapter,
+    ChapterDetails,
+    PartialSourceManga,
+    SourceManga,
+    Tag,
+    TagSection
 } from '@paperback/types'
-import { CheerioAPI } from 'cheerio'
+
+import {
+    Cheerio,
+    CheerioAPI
+} from 'cheerio'
 
 import {
     MangaStreamParser
 } from '../MangaStreamParser'
 
+import { HomeSectionData } from '../MangaStreamHelper'
 import { decode as decodeHTMLEntity } from 'html-entities'
 import { convertDate } from '../LanguageUtils'
 
@@ -77,7 +87,7 @@ export class StarboundScansParser extends MangaStreamParser {
     override parseChapterList($: CheerioAPI, mangaId: string, source: any): Chapter[] {
         const chapters: Chapter[] = []
         let sortingIndex = 0
-        let language = source.language
+        const language = source.language
 
         for (const chapter of $('div#chapters > a').toArray()) {
             const title = decodeHTMLEntity($(chapter).attr('title').trim()).replace(/\s+/g, ' ')
@@ -132,7 +142,7 @@ export class StarboundScansParser extends MangaStreamParser {
 
     override isLastPage = ($: CheerioAPI, id: string): boolean => {
         let isLast = true
-        const hasNext = Boolean($('a. click_hilltop_click:contains(»)'))
+        const hasNext = Boolean($('a. click_hilltop_click:contains(ï¿½)'))
         if (hasNext) {
             isLast = false
         }
@@ -195,7 +205,7 @@ export class StarboundScansParser extends MangaStreamParser {
             image = imageObj?.attr('data-cfsrc')
         }
         else if ((typeof imageObj?.attr('style')) != 'undefined') {
-            let style = imageObj?.attr('style')
+            const style = imageObj?.attr('style')
             const match = style.match(/url\(["']?(.*?)["']?\)/);
             if (match && match[1]) {
                 image = match[1]
@@ -222,7 +232,6 @@ export class StarboundScansParser extends MangaStreamParser {
         for (const manga of $('button', 'div.group').toArray()) {
             const title = $('a', manga).attr('title')
             const image = this.getImageSrc($('div.w-44')) ?? ''
-            const subtitle = $('div.epxs', manga).text().trim()
 
             const slug: string = this.idCleaner($('a', manga).attr('href') ?? '')
             const path: string = ($('a', manga).attr('href') ?? '').replace(/\/$/, '').split('/').slice(-2).shift() ?? ''
@@ -238,7 +247,7 @@ export class StarboundScansParser extends MangaStreamParser {
                 mangaId,
                 image: image,
                 title: decodeHTMLEntity(title),
-                subtitle: decodeHTMLEntity(subtitle)
+                subtitle: ''
             }))
         }
 
