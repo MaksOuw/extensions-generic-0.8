@@ -2,6 +2,7 @@ import {
     BadgeColor,
     ChapterDetails,
     ContentRating,
+    SearchRequest,
     SourceInfo,
     SourceIntents,
     SourceManga
@@ -14,11 +15,15 @@ import {
     getExportVersion,
     MangaStream
 } from '../MangaStream'
+import { URLBuilder } from '../UrlBuilder'
+import {
+    getFilterTagsBySection
+} from '../MangaStreamHelper'
 
 const DOMAIN = 'https://starboundscans.com'
 
 export const StarboundScansInfo: SourceInfo = {
-    version: getExportVersion('1.0.0'),
+    version: getExportVersion('1.0.1'),
     name: 'StarboundScans',
     description: `Extension that pulls webtoons from ${DOMAIN}`,
     author: 'MaksOuw',
@@ -93,5 +98,48 @@ export class StarboundScans extends MangaStream {
         const $ = cheerio.load(response.data as string)
 
         return this.parser.parseChapterDetails($, mangaId, chapterId)
+    }
+
+    override async getSearchResults(query: SearchRequest, metadata: any): Promise<PagedResults> {
+        const page: number = metadata?.page ?? 1
+
+        const request = await this.constructSearchRequest(page, query)
+        const response = await this.requestManager.schedule(request, 1)
+        this.checkResponseError(response)
+        const $ = cheerio.load(response.data as string)
+        const results = await this.parser.parseSearchResults($, this)
+
+        const manga: PartialSourceManga[] = []
+        for (const result of results) {
+            let mangaId: string = result.mangaId
+
+            manga.push(App.createPartialSourceManga({
+                mangaId,
+                image: result.image,
+                title: result.title,
+                subtitle: result.subtitle
+            }))
+        }
+
+        metadata = !this.parser.isLastPage($, 'view_more') ? { page: page + 1 } : undefined
+        return App.createPagedResults({
+            results: manga,
+            metadata
+        })
+    }
+
+    override async constructSearchRequest(page: number, query: SearchRequest): Promise<any> {
+        let urlBuilder: URLBuilder = new URLBuilder(this.baseUrl)
+            .addPathComponent(this.directoryPath)
+
+        urlBuilder = urlBuilder
+            .addQueryParameter('q', query?.title ?? '')
+            .addQueryParameter('genre', getFilterTagsBySection('genres', query?.includedTags, true))
+            .addQueryParameter('genre', getFilterTagsBySection('genres', query?.excludedTags, false, await this.supportsTagExclusion()))
+
+        return App.createRequest({
+            url: urlBuilder.buildUrl({ addTrailingSlash: true, includeUndefinedParameters: false }),
+            method: 'GET'
+        })
     }
 }

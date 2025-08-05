@@ -275,4 +275,27 @@ export class StarboundScansParser extends MangaStreamParser {
 
         return items
     }
+
+    override async parseSearchResults($: CheerioAPI, source: any): Promise<any[]> {
+        const results: any[] = []
+
+        for (const obj of $('button:not([class=hidden])').toArray()) {
+            const mangaId: string = $(obj)?.attr('id')
+            if (!mangaId?.match(/[a-f0-9]{11}/)) {
+                continue
+            }
+
+            const title: string = $('a', obj).attr('title') ?? ''
+            const image = this.getImageSrc($('div.bg-cover', obj)) ?? ''
+
+            results.push({
+                mangaId,
+                image: image || source.fallbackImage,
+                title: decodeHTMLEntity(title),
+                subtitle: ''
+            })
+        }
+
+        return results
+    }
 }
