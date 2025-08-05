@@ -23,7 +23,7 @@ import { convertDate } from '../LanguageUtils'
 export class StarboundScansParser extends MangaStreamParser {
     override parseMangaDetails($: CheerioAPI, mangaId: string, source: any): SourceManga {
         const titles: string[] = []
-        titles.push(decodeHTMLEntity($('h1.entry-title').text().trim()))
+        titles.push(decodeHTMLEntity($('h1.text-xl').text().trim()))
 
         const altTitles = $(`span:contains(${source.manga_selector_AlternativeTitles}), b:contains(${source.manga_selector_AlternativeTitles})+span, .imptdt:contains(${source.manga_selector_AlternativeTitles}) i, h1.entry-title+span`).contents().text().split(',') // Language dependant
         for (const title of altTitles) {
@@ -56,6 +56,12 @@ export class StarboundScansParser extends MangaStreamParser {
                 break
             case source.manga_StatusTypes.COMPLETED.toLowerCase():
                 status = 'Completed'
+                break
+            case source.manga_StatusTypes.DROPPED.toLowerCase():
+                status = 'Dropped'
+                break
+            case source.manga_StatusTypes.PAUSED.toLowerCase():
+                status = 'Paused'
                 break
             default:
                 status = 'Ongoing'
@@ -141,13 +147,7 @@ export class StarboundScansParser extends MangaStreamParser {
     }
 
     override isLastPage = ($: CheerioAPI, id: string): boolean => {
-        let isLast = true
-        const hasNext = Boolean($('a. click_hilltop_click:contains(�)'))
-        if (hasNext) {
-            isLast = false
-        }
-
-        return isLast
+        return true
     }
 
     override async parseHomeSection($: CheerioAPI, section: HomeSectionData, source: any): Promise<PartialSourceManga[]> {
@@ -229,9 +229,31 @@ export class StarboundScansParser extends MangaStreamParser {
     override async parseViewMore($: CheerioAPI, source: any): Promise<PartialSourceManga[]> {
         const items: PartialSourceManga[] = []
 
-        for (const manga of $('button', 'div.group').toArray()) {
+        for (let manga of $('button').toArray()) {
             const title = $('a', manga).attr('title')
-            const image = this.getImageSrc($('div.w-44')) ?? ''
+            const image = this.getImageSrc($('div.bg-cover', manga)) ?? ''
+
+            const slug: string = this.idCleaner($('a', manga).attr('href') ?? '')
+            const path: string = ($('a', manga).attr('href') ?? '').replace(/\/$/, '').split('/').slice(-2).shift() ?? ''
+            const postId = $('a', manga).attr('rel')
+            const mangaId: string = await source.getUsePostIds() ? (isNaN(Number(postId)) ? await source.slugToPostId(slug, path) : postId) : slug
+
+            if (!mangaId || !title) {
+                console.log(`Failed to parse view more homepage sections for ${source.baseUrl}`)
+                continue
+            }
+
+            items.push(App.createPartialSourceManga({
+                mangaId,
+                image: image,
+                title: decodeHTMLEntity(title),
+                subtitle: ''
+            }))
+        }
+
+        for (let manga of $('div.group').toArray()) {
+            const title = $('a', manga).attr('title')
+            const image = this.getImageSrc($('div.bg-cover', manga)) ?? ''
 
             const slug: string = this.idCleaner($('a', manga).attr('href') ?? '')
             const path: string = ($('a', manga).attr('href') ?? '').replace(/\/$/, '').split('/').slice(-2).shift() ?? ''

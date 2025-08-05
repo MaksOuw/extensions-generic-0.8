@@ -18,7 +18,7 @@ import {
 const DOMAIN = 'https://starboundscans.com'
 
 export const StarboundScansInfo: SourceInfo = {
-    version: getExportVersion('0.1.2'),
+    version: getExportVersion('1.0.0'),
     name: 'StarboundScans',
     description: `Extension that pulls webtoons from ${DOMAIN}`,
     author: 'MaksOuw',
@@ -39,6 +39,13 @@ export class StarboundScans extends MangaStream {
     baseUrl: string = DOMAIN
     override language = '🇫🇷'
     override usePostIds = false
+
+    override manga_StatusTypes: StatusTypes = {
+        ONGOING: 'ONGOING',
+        COMPLETED: 'COMPLETED',
+        DROPPED: 'DROPPED',
+        PAUSED: 'PAUSED'
+    }
 
     override directoryPath = 'series'
 
