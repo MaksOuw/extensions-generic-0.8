@@ -20005,6 +20005,24 @@ var _Sources = (() => {
       }
       return items;
     }
+    async parseSearchResults($2, source) {
+      const results = [];
+      for (const obj of $2("button:not([class=hidden])").toArray()) {
+        const mangaId = $2(obj)?.attr("id");
+        if (!mangaId?.match(/[a-f0-9]{11}/)) {
+          continue;
+        }
+        const title = $2("a", obj).attr("title") ?? "";
+        const image = this.getImageSrc($2("div.bg-cover", obj)) ?? "";
+        results.push({
+          mangaId,
+          image: image || source.fallbackImage,
+          title: decode(title),
+          subtitle: ""
+        });
+      }
+      return results;
+    }
   };
 
   // src/MangaStream.ts
@@ -20567,7 +20585,7 @@ Please go to the homepage of <${this.baseUrl}> and press the cloud icon.`);
   // src/StarboundScans/StarboundScans.ts
   var DOMAIN = "https://starboundscans.com";
   var StarboundScansInfo = {
-    version: getExportVersion("1.0.0"),
+    version: getExportVersion("1.0.1"),
     name: "StarboundScans",
     description: `Extension that pulls webtoons from ${DOMAIN}`,
     author: "MaksOuw",
@@ -20631,6 +20649,37 @@ Please go to the homepage of <${this.baseUrl}> and press the cloud icon.`);
       this.checkResponseError(response);
       const $2 = load(response.data);
       return this.parser.parseChapterDetails($2, mangaId, chapterId);
+    }
+    async getSearchResults(query, metadata) {
+      const page = metadata?.page ?? 1;
+      const request = await this.constructSearchRequest(page, query);
+      const response = await this.requestManager.schedule(request, 1);
+      this.checkResponseError(response);
+      const $2 = load(response.data);
+      const results = await this.parser.parseSearchResults($2, this);
+      const manga = [];
+      for (const result of results) {
+        let mangaId = result.mangaId;
+        manga.push(App.createPartialSourceManga({
+          mangaId,
+          image: result.image,
+          title: result.title,
+          subtitle: result.subtitle
+        }));
+      }
+      metadata = !this.parser.isLastPage($2, "view_more") ? { page: page + 1 } : void 0;
+      return App.createPagedResults({
+        results: manga,
+        metadata
+      });
+    }
+    async constructSearchRequest(page, query) {
+      let urlBuilder = new URLBuilder(this.baseUrl).addPathComponent(this.directoryPath);
+      urlBuilder = urlBuilder.addQueryParameter("q", query?.title ?? "").addQueryParameter("genre", getFilterTagsBySection("genres", query?.includedTags, true)).addQueryParameter("genre", getFilterTagsBySection("genres", query?.excludedTags, false, await this.supportsTagExclusion()));
+      return App.createRequest({
+        url: urlBuilder.buildUrl({ addTrailingSlash: true, includeUndefinedParameters: false }),
+        method: "GET"
+      });
     }
   };
   return __toCommonJS(StarboundScans_exports);
