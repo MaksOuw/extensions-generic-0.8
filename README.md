@@ -8,4 +8,4 @@ Join the [Discord](https://discord.gg/rmf6jQpMU9) for support and more sources!
 
 | Source Type | Description     |        Link                                                            |
 | ---         |    ----         |         ---                                                            |
-| Any         | MaksOuw sources | [Click me!](https://maksouw.github.io/extensions-generic-0.8/maksouw/) |
+| Any         | MaksOuw sources | [Click me!](https://maksouw.github.io/extensions-generic-0.8/0.8/) |
