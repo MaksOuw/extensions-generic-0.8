@@ -19796,17 +19796,12 @@ var _Sources = (() => {
     constructor() {
       super(...arguments);
       this.isLastPage = ($2, id) => {
-        let isLast = true;
-        const hasNext = Boolean($2("a. click_hilltop_click:contains(\uFFFD)"));
-        if (hasNext) {
-          isLast = false;
-        }
-        return isLast;
+        return true;
       };
     }
     parseMangaDetails($2, mangaId, source) {
       const titles = [];
-      titles.push(decode($2("h1.entry-title").text().trim()));
+      titles.push(decode($2("h1.text-xl").text().trim()));
       const altTitles = $2(`span:contains(${source.manga_selector_AlternativeTitles}), b:contains(${source.manga_selector_AlternativeTitles})+span, .imptdt:contains(${source.manga_selector_AlternativeTitles}) i, h1.entry-title+span`).contents().text().split(",");
       for (const title of altTitles) {
         if (title == "") {
@@ -19835,6 +19830,12 @@ var _Sources = (() => {
           break;
         case source.manga_StatusTypes.COMPLETED.toLowerCase():
           status = "Completed";
+          break;
+        case source.manga_StatusTypes.DROPPED.toLowerCase():
+          status = "Dropped";
+          break;
+        case source.manga_StatusTypes.PAUSED.toLowerCase():
+          status = "Paused";
           break;
         default:
           status = "Ongoing";
@@ -19966,9 +19967,27 @@ var _Sources = (() => {
     }
     async parseViewMore($2, source) {
       const items = [];
-      for (const manga of $2("button", "div.group").toArray()) {
+      for (let manga of $2("button").toArray()) {
         const title = $2("a", manga).attr("title");
-        const image = this.getImageSrc($2("div.w-44")) ?? "";
+        const image = this.getImageSrc($2("div.bg-cover", manga)) ?? "";
+        const slug = this.idCleaner($2("a", manga).attr("href") ?? "");
+        const path = ($2("a", manga).attr("href") ?? "").replace(/\/$/, "").split("/").slice(-2).shift() ?? "";
+        const postId = $2("a", manga).attr("rel");
+        const mangaId = await source.getUsePostIds() ? isNaN(Number(postId)) ? await source.slugToPostId(slug, path) : postId : slug;
+        if (!mangaId || !title) {
+          console.log(`Failed to parse view more homepage sections for ${source.baseUrl}`);
+          continue;
+        }
+        items.push(App.createPartialSourceManga({
+          mangaId,
+          image,
+          title: decode(title),
+          subtitle: ""
+        }));
+      }
+      for (let manga of $2("div.group").toArray()) {
+        const title = $2("a", manga).attr("title");
+        const image = this.getImageSrc($2("div.bg-cover", manga)) ?? "";
         const slug = this.idCleaner($2("a", manga).attr("href") ?? "");
         const path = ($2("a", manga).attr("href") ?? "").replace(/\/$/, "").split("/").slice(-2).shift() ?? "";
         const postId = $2("a", manga).attr("rel");
@@ -20548,7 +20567,7 @@ Please go to the homepage of <${this.baseUrl}> and press the cloud icon.`);
   // src/StarboundScans/StarboundScans.ts
   var DOMAIN = "https://starboundscans.com";
   var StarboundScansInfo = {
-    version: getExportVersion("0.1.2"),
+    version: getExportVersion("1.0.0"),
     name: "StarboundScans",
     description: `Extension that pulls webtoons from ${DOMAIN}`,
     author: "MaksOuw",
@@ -20570,6 +20589,12 @@ Please go to the homepage of <${this.baseUrl}> and press the cloud icon.`);
       this.baseUrl = DOMAIN;
       this.language = "\u{1F1EB}\u{1F1F7}";
       this.usePostIds = false;
+      this.manga_StatusTypes = {
+        ONGOING: "ONGOING",
+        COMPLETED: "COMPLETED",
+        DROPPED: "DROPPED",
+        PAUSED: "PAUSED"
+      };
       this.directoryPath = "series";
       this.manga_tag_selector_box = "div.flex.flex-wrap.gap-3.justify-start.items-start";
       this.parser = new StarboundScansParser();
