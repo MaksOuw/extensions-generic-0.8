@@ -19725,7 +19725,7 @@ var _Sources = (() => {
       const parsed = JSON.parse(json);
       if (Array.isArray(parsed.mangas)) {
         parsed.mangas.forEach((manga) => {
-          let mangaId = manga._id;
+          let mangaId = manga.slug;
           results.push({
             mangaId,
             image: `${source.baseUrl}/api/${manga.coverImage}`,
@@ -19814,7 +19814,7 @@ var _Sources = (() => {
   // src/PhenixScans/PhenixScans.ts
   var DOMAIN = "https://phenix-scans.com";
   var PhenixScansInfo = {
-    version: "1.0.0",
+    version: "1.0.1",
     name: "PhenixScans",
     description: `Extension that pulls webtoons from ${DOMAIN}`,
     author: "MaksOuw",
