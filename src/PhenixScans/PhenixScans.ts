@@ -30,7 +30,7 @@ import { URLBuilder } from '../UrlBuilder'
 const DOMAIN = 'https://phenix-scans.com'
 
 export const PhenixScansInfo: SourceInfo = {
-    version: '1.0.0',
+    version: '1.0.1',
     name: 'PhenixScans',
     description: `Extension that pulls webtoons from ${DOMAIN}`,
     author: 'MaksOuw',

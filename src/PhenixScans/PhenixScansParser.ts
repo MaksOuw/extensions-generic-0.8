@@ -198,8 +198,8 @@ export class PhenixScansParser {
         const results: any[] = []
         const parsed = JSON.parse(json)
         if (Array.isArray(parsed.mangas)) {
-            parsed.mangas.forEach((manga: { _id: string; title: string, coverImage: string }) => {
-                let mangaId: string = manga._id
+            parsed.mangas.forEach((manga: { slug: string; title: string, coverImage: string }) => {
+                let mangaId: string = manga.slug
                 results.push({
                     mangaId,
                     image: `${source.baseUrl}/api/${manga.coverImage}`,
