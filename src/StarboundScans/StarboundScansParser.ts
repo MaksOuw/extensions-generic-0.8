@@ -1,91 +1,50 @@
-import {
-    Chapter,
-    ChapterDetails,
-    PartialSourceManga,
-    SourceManga,
-    Tag,
-    TagSection
-} from '@paperback/types'
-
-import {
-    Cheerio,
-    CheerioAPI
-} from 'cheerio'
-
-import {
-    MangaStreamParser
-} from '../MangaStreamParser'
-
-import { HomeSectionData } from '../MangaStreamHelper'
+import { Chapter, SourceManga, Tag, TagSection } from '@paperback/types'
+import { CheerioAPI } from 'cheerio'
 import { decode as decodeHTMLEntity } from 'html-entities'
-import { convertDate } from '../LanguageUtils'
+import { Parser } from './MadaraParser'
+import moment from 'moment';
+import 'moment/locale/fr';
 
-export class StarboundScansParser extends MangaStreamParser {
-    override parseMangaDetails($: CheerioAPI, mangaId: string, source: any): SourceManga {
-        const titles: string[] = []
-        titles.push(decodeHTMLEntity($('h1.text-xl').text().trim()))
+export class StarboundScansParser extends Parser {
+    override async parseMangaDetails($: CheerioAPI, mangaId: string, source: any): Promise<SourceManga> {
+        const title: string = decodeHTMLEntity($('h1.project-title').text().trim())
+        const author: string = ''
+        const artist: string = ''
+        const description: string = decodeHTMLEntity($('div.project-description-card > div.card-body > div.black-orion-article-content').first().text()).replace('Show more', '').trim()
 
-        const altTitles = $(`span:contains(${source.manga_selector_AlternativeTitles}), b:contains(${source.manga_selector_AlternativeTitles})+span, .imptdt:contains(${source.manga_selector_AlternativeTitles}) i, h1.entry-title+span`).contents().text().split(',') // Language dependant
-        for (const title of altTitles) {
-            if (title == '') {
-                continue
-            }
-            titles.push(decodeHTMLEntity(title.trim()))
-        }
+        const image: string = encodeURI(await this.getImageSrc($('div.project-cover-container img').first(), source))
+        const parsedStatus: string = $('div.info-value', $('div.project-info-card').last()).first().text().trim()
 
-        const author = $(`span:contains(${source.manga_selector_author})`).parent().next().contents().text().trim() // Language dependant
-        const artist = $(`span:contains(${source.manga_selector_artist})`).parent().next().contents().text().trim() // Language dependant
-        const image = this.getImageSrc($('div.w-44'))
-        const description = decodeHTMLEntity($('div[id="expand_content"] > p').text().trim())
-
-        const arrayTags: Tag[] = []
-        for (const tag of $('a', source.manga_tag_selector_box).toArray()) {
-            const label = $(tag).text().trim()
-            const id = this.idCleaner($(tag).attr('href') ?? '')
-            if (!id || !label) {
-                continue
-            }
-            arrayTags.push({ id, label })
-        }
-
-        const rawStatus = $(`span:contains(${source.manga_selector_status})`).parent().next().contents().text().trim()
-        let status
-        switch (rawStatus.toLowerCase()) {
-            case source.manga_StatusTypes.ONGOING.toLowerCase():
-                status = 'Ongoing'
-                break
-            case source.manga_StatusTypes.COMPLETED.toLowerCase():
+        let status: string
+        switch (parsedStatus.toUpperCase()) {
+            case 'TERMINÉ':
                 status = 'Completed'
-                break
-            case source.manga_StatusTypes.DROPPED.toLowerCase():
-                status = 'Dropped'
-                break
-            case source.manga_StatusTypes.PAUSED.toLowerCase():
-                status = 'Paused'
                 break
             default:
                 status = 'Ongoing'
                 break
         }
 
-        const tagSections: TagSection[] = [
-            App.createTagSection({
-                id: '0',
-                label: 'genres',
-                tags: arrayTags.map((x) => App.createTag(x))
-            })
-        ]
+        const genres: Tag[] = []
+        for (const obj of $('div.genres-list span').toArray()) {
+            const label = $(obj).text()
+            const id = label
+
+            if (!label || !id) continue
+            genres.push(App.createTag({ label: label, id: id }))
+        }
+        const tagSections: TagSection[] = [App.createTagSection({ id: '0', label: 'genres', tags: genres })]
 
         return App.createSourceManga({
             id: mangaId,
             mangaInfo: App.createMangaInfo({
-                titles,
+                titles: [title],
                 image: image,
-                status,
-                author: author == '' ? 'Unknown' : author,
-                artist: artist == '' ? 'Unknown' : artist,
+                author: author,
+                artist: artist,
                 tags: tagSections,
-                desc: description
+                desc: description,
+                status: status
             })
         })
     }
@@ -93,23 +52,40 @@ export class StarboundScansParser extends MangaStreamParser {
     override parseChapterList($: CheerioAPI, mangaId: string, source: any): Chapter[] {
         const chapters: Chapter[] = []
         let sortingIndex = 0
-        const language = source.language
 
-        for (const chapter of $('div#chapters > a').toArray()) {
-            const title = decodeHTMLEntity($(chapter).attr('title').trim()).replace(/\s+/g, ' ')
-            const date = convertDate($(chapter).attr('d').trim())
-            const id = decodeHTMLEntity($(chapter).attr('href').trim()).substr(21, 11) ?? ''
-            const chapterNumber = parseFloat(decodeHTMLEntity($(chapter).attr('title').trim()).replace(/Chapitre\s/g, '') ?? '')
-            if (!id || typeof id === 'undefined') {
-                throw new Error(`Could not parse out ID when getting chapters for postId: ${mangaId}`)
+        // For each available chapter..
+        for (const obj of $('div.chapters-list').children().toArray()) {
+            const id = this.idCleaner($('a', obj).first().attr('href') ?? '')
+
+            const chapName = $('a', obj).first().text().trim() ?? ''
+            const chapNumRegex = id.match(/(?:chapter|ch.*?)(\d+\.?\d?(?:[-_]\d+)?)|(\d+\.?\d?(?:[-_]\d+)?)$/)
+            let chapNum: string | number = chapNumRegex && chapNumRegex[1] ? chapNumRegex[1].replace(/[-_]/gm, '.') : chapNumRegex?.[2] ?? '0'
+
+            // make sure the chapter number is a number and not NaN
+            chapNum = parseFloat(chapNum) ?? 0
+
+            let mangaTime: Date
+            const timeSelector = $('span.chapter-date', obj).text().trim() ?? ''
+            if (typeof timeSelector !== 'undefined') {
+                // Firstly check if there is a NEW tag, if so parse the time from this
+                mangaTime = this.parseDate(timeSelector ?? '')
+            } else {
+                // Else get the date from the info box
+                console.log('Could not parse chapter date, set to today')
+                mangaTime = new Date()
+            }
+
+            if (!id || typeof id === 'undefined' || id === '#') {
+                console.log(`Could not parse out ID when getting chapters for postId:${mangaId} parsedId: ${id}`)
+                continue
             }
 
             chapters.push({
-                id: id, // Store chapterNumber as id
-                langCode: language,
-                chapNum: chapterNumber,
-                name: title,
-                time: date,
+                id: id,
+                langCode: source.language,
+                chapNum: chapNum,
+                name: chapName ? decodeHTMLEntity(chapName) : '',
+                time: mangaTime,
                 sortingIndex,
                 volume: 0,
                 group: ''
@@ -117,185 +93,19 @@ export class StarboundScansParser extends MangaStreamParser {
             sortingIndex--
         }
 
-        // If there are no chapters, throw error to avoid losing progress
         if (chapters.length == 0) {
             throw new Error(`Couldn't find any chapters for mangaId: ${mangaId}!`)
         }
 
-        return chapters.map((chapter) => {
+        return chapters.map(chapter => {
             chapter.sortingIndex += chapters.length
             return App.createChapter(chapter)
         })
     }
 
-    override parseChapterDetails($: CheerioAPI, mangaId: string, chapterId: string): ChapterDetails {
-        const pages: string[] = []
-
-        for (const img of $('div#pages > img').toArray()) {
-            const uid = $(img).attr('uid') ?? ''
-            if (!uid) continue
-            pages.push('https://image.meowing.org/uploads/' + uid)
-        }
-
-        const chapterDetails = App.createChapterDetails({
-            id: chapterId,
-            mangaId: mangaId,
-            pages: pages
-        })
-
-        return chapterDetails
-    }
-
-    override isLastPage = ($: CheerioAPI, id: string): boolean => {
-        return true
-    }
-
-    override async parseHomeSection($: CheerioAPI, section: HomeSectionData, source: any): Promise<PartialSourceManga[]> {
-        const items: PartialSourceManga[] = []
-
-        const mangas = section.selectorFunc($)
-        if (!mangas.length) {
-            console.log(`Unable to parse valid ${section.section.title} section!`)
-            return items
-        }
-
-        for (const manga of mangas.toArray()) {
-            const title = section.titleSelectorFunc($, manga)
-
-            const image = this.getImageSrc($('div.bg-cover', manga)) ?? ''
-
-            const subtitle = section.subtitleSelectorFunc($, manga) ?? ''
-
-            const slug: string = this.idCleaner($('a', manga).attr('href') ?? '')
-            const path: string = ($('a', manga).attr('href') ?? '').replace(/\/$/, '').split('/').slice(-2).shift() ?? ''
-            const postId = $('a', manga).attr('rel')
-            const mangaId: string = await source.getUsePostIds() ? (isNaN(Number(postId)) ? await source.slugToPostId(slug, path) : postId) : slug
-
-            if (!mangaId || !title) {
-                console.log(`Failed to parse homepage sections for ${source.baseUrl} title (${title}) mangaId (${mangaId})`)
-                continue
-            }
-
-            items.push(App.createPartialSourceManga({
-                mangaId,
-                image: image,
-                title: decodeHTMLEntity(title),
-                subtitle: decodeHTMLEntity(subtitle)
-            }))
-        }
-
-        return items
-    }
-
-    override getImageSrc(imageObj: Cheerio<Element> | undefined): string {
-        let image: string | undefined
-        if ((typeof imageObj?.attr('data-src')) != 'undefined') {
-            image = imageObj?.attr('data-src')
-        }
-        else if ((typeof imageObj?.attr('data-lazy-src')) != 'undefined') {
-            image = imageObj?.attr('data-lazy-src')
-        }
-        else if ((typeof imageObj?.attr('srcset')) != 'undefined') {
-            image = imageObj?.attr('srcset')?.split(' ')[0] ?? ''
-        }
-        else if ((typeof imageObj?.attr('src')) != 'undefined') {
-            image = imageObj?.attr('src')
-        }
-        else if ((typeof imageObj?.attr('data-cfsrc')) != 'undefined') {
-            image = imageObj?.attr('data-cfsrc')
-        }
-        else if ((typeof imageObj?.attr('style')) != 'undefined') {
-            const style = imageObj?.attr('style')
-            const match = style.match(/url\(["']?(.*?)["']?\)/);
-            if (match && match[1]) {
-                image = match[1]
-            }
-            else {
-                image = ''
-            }
-        }
-        else {
-            image = ''
-        }
-
-        image = image?.split('?resize')[0] ?? ''
-        image = image.replace(/^\/\//, 'https://')
-        image = image.replace(/^\//, 'https:/')
-        image = image.replace(/\&w\=\d*/, '')
-
-        return encodeURI(decodeURI(decodeHTMLEntity(image?.trim())))
-    }
-
-    override async parseViewMore($: CheerioAPI, source: any): Promise<PartialSourceManga[]> {
-        const items: PartialSourceManga[] = []
-
-        for (let manga of $('button').toArray()) {
-            const title = $('a', manga).attr('title')
-            const image = this.getImageSrc($('div.bg-cover', manga)) ?? ''
-
-            const slug: string = this.idCleaner($('a', manga).attr('href') ?? '')
-            const path: string = ($('a', manga).attr('href') ?? '').replace(/\/$/, '').split('/').slice(-2).shift() ?? ''
-            const postId = $('a', manga).attr('rel')
-            const mangaId: string = await source.getUsePostIds() ? (isNaN(Number(postId)) ? await source.slugToPostId(slug, path) : postId) : slug
-
-            if (!mangaId || !title) {
-                console.log(`Failed to parse view more homepage sections for ${source.baseUrl}`)
-                continue
-            }
-
-            items.push(App.createPartialSourceManga({
-                mangaId,
-                image: image,
-                title: decodeHTMLEntity(title),
-                subtitle: ''
-            }))
-        }
-
-        for (let manga of $('div.group').toArray()) {
-            const title = $('a', manga).attr('title')
-            const image = this.getImageSrc($('div.bg-cover', manga)) ?? ''
-
-            const slug: string = this.idCleaner($('a', manga).attr('href') ?? '')
-            const path: string = ($('a', manga).attr('href') ?? '').replace(/\/$/, '').split('/').slice(-2).shift() ?? ''
-            const postId = $('a', manga).attr('rel')
-            const mangaId: string = await source.getUsePostIds() ? (isNaN(Number(postId)) ? await source.slugToPostId(slug, path) : postId) : slug
-
-            if (!mangaId || !title) {
-                console.log(`Failed to parse view more homepage sections for ${source.baseUrl}`)
-                continue
-            }
-
-            items.push(App.createPartialSourceManga({
-                mangaId,
-                image: image,
-                title: decodeHTMLEntity(title),
-                subtitle: ''
-            }))
-        }
-
-        return items
-    }
-
-    override async parseSearchResults($: CheerioAPI, source: any): Promise<any[]> {
-        const results: any[] = []
-
-        for (const obj of $('button:not([class=hidden])').toArray()) {
-            const mangaId: string = $(obj)?.attr('id')
-            if (!mangaId?.match(/[a-f0-9]{11}/)) {
-                continue
-            }
-
-            const title: string = $('a', obj).attr('title') ?? ''
-            const image = this.getImageSrc($('div.bg-cover', obj)) ?? ''
-
-            results.push({
-                mangaId,
-                image: image || source.fallbackImage,
-                title: decodeHTMLEntity(title),
-                subtitle: ''
-            })
-        }
-
-        return results
+    override parseDate = (date: string): Date => {
+        moment.locale('fr')
+        
+        return moment(date, 'DD MMMM YYYY').toDate()
     }
 }
