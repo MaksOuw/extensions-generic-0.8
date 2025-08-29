@@ -19764,7 +19764,7 @@ var _Sources = (() => {
     }
   };
 
-  // src/UrlBuilder.ts
+  // src/PhenixScans/UrlBuilder.ts
   var URLBuilder = class {
     constructor(baseUrl) {
       this.parameters = {};
@@ -19814,7 +19814,7 @@ var _Sources = (() => {
   // src/PhenixScans/PhenixScans.ts
   var DOMAIN = "https://phenix-scans.com";
   var PhenixScansInfo = {
-    version: "1.0.1",
+    version: "1.0.2",
     name: "PhenixScans",
     description: `Extension that pulls webtoons from ${DOMAIN}`,
     author: "MaksOuw",
