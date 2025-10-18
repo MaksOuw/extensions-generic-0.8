@@ -1,7 +1,7 @@
 import { Chapter, ChapterDetails, PartialSourceManga, SourceManga, Tag, TagSection } from "@paperback/types"
 import { Cheerio, CheerioAPI } from "cheerio"
 import { decode as decodeHTMLEntity } from 'html-entities'
-import { convertDate } from "./Utils"
+import { convertDate } from "../Utils"
 import { HomeSectionData } from "./PhenixScansHelpers"
 
 export class PhenixScansParser {
