@@ -17194,9 +17194,9 @@ Please go to the homepage of <${this.baseUrl}> and press the cloud icon.`);
   };
 
   // src/RaijinScan/RaijinScan.ts
-  var DOMAIN = "https://raijinscan.co";
+  var DOMAIN = "https://raijin-scans.fr";
   var RaijinScanInfo = {
-    version: getExportVersion("0.0.1"),
+    version: getExportVersion("1.0.1"),
     name: "RaijinScan",
     description: `Extension that pulls manga from ${DOMAIN}`,
     author: "MaksOuw",
