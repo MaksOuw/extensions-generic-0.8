@@ -19506,15 +19506,19 @@ var _Sources = (() => {
   // src/PoseidonScans/PoseidonScansParser.ts
   var import_moment = __toESM(require_moment());
   var PoseidonScansParser = class {
+    constructor(domain) {
+      this.domain = "";
+      this.domain = domain;
+    }
     parseMangaDetails($2, mangaId, source) {
       const titles = [];
       titles.push(decode($2("h1.text-4xl").text().trim()));
-      const author = $2("body > main > div > main > div.min-h-screen.bg-black > div > div.container.mx-auto.px-4.lg:px-8.relative.z-10.-mt-32.lg:-mt-48.pb-20 > div > div.lg:col-span-3.flex.flex-col.gap-6 > div > div.bg-black.rounded-3xl.py-4.space-y-2 > div > div:nth-child(3) > span.text-white.font-bold.truncate.max-w-[150px]").text().trim();
-      const artist = $2("body > main > div > main > div.min-h-screen.bg-black > div > div.container.mx-auto.px-4.lg:px-8.relative.z-10.-mt-32.lg:-mt-48.pb-20 > div > div.lg:col-span-3.flex.flex-col.gap-6 > div > div.bg-black.rounded-3xl.py-4.space-y-2 > div > div:nth-child(4) > span.text-white.font-bold.truncate.max-w-[150px]").text().trim();
-      const image = this.getImageSrc($2("img.project__cover"));
+      const author = $2("body > main > div > main > div.min-h-screen.bg-black > div > div.container.mx-auto > div > div.gap-6 > div > div.bg-black.rounded-3xl.py-4.space-y-2 > div > div:nth-child(3) > span.text-white").text().trim();
+      const artist = $2("body > main > div > main > div.min-h-screen.bg-black > div > div.container.mx-auto > div > div.gap-6 > div > div.bg-black.rounded-3xl.py-4.space-y-2 > div > div:nth-child(4) > span.text-white").text().trim();
+      const image = this.getImageSrc($2("img.object-cover"));
       const description = decode($2("p.text-gray-300").text().trim());
       const arrayTags = [];
-      for (const tag of $2("a", "body > main > div > main > div.min-h-screen.bg-black > div > div.container.mx-auto.px-4.lg:px-8.relative.z-10.-mt-32.lg:-mt-48.pb-20 > div > div.lg:col-span-3.flex.flex-col.gap-6 > div > div.space-y-3 > div").toArray()) {
+      for (const tag of $2("a", "body > main > div > main > div.min-h-screen.bg-black > div > div.container.mx-auto > div > div.gap-6 > div > div.space-y-3 > div").toArray()) {
         const label = $2(tag).text().trim();
         const id = this.idCleaner($2(tag).attr("href") ?? "");
         if (!id || !label) {
@@ -19522,7 +19526,7 @@ var _Sources = (() => {
         }
         arrayTags.push({ id, label });
       }
-      const rawStatus = $2(`body > main > div > main > div.min-h-screen.bg-black > div > div.container.mx-auto.px-4.lg:px-8.relative.z-10.-mt-32.lg:-mt-48.pb-20 > div > div.lg:col-span-3.flex.flex-col.gap-6 > div > div.bg-black.rounded-3xl.py-4.space-y-2 > div > div:nth-child(1) > span.px-3.py-1.rounded-full.text-xs.font-bold.border.bg-green-500/10.text-green-400.border-green-500/20`).text().trim();
+      const rawStatus = $2(`body > main > div > main > div.min-h-screen.bg-black > div > div.container.mx-auto > div > div.gap-6 > div > div.bg-black.rounded-3xl.py-4.space-y-2 > div > div:nth-child(1) > span.px-3.py-1.rounded-full.text-xs`).text().trim();
       let status;
       switch (rawStatus.toLowerCase()) {
         case source.manga_StatusTypes.ONGOING.toLowerCase():
@@ -19565,9 +19569,9 @@ var _Sources = (() => {
       const chapters = [];
       let sortingIndex = 0;
       const language = source.language;
-      for (const chapter of $2("a.rounded-xl").toArray()) {
-        const title = decode($2("span.text-white", chapter).text().trim()).replace(/\s+/g, " ").replace(/\n/g, " ");
-        const date = this.convertDate($2("div.text-xs > span", chapter).text().trim());
+      for (const chapter of $2("li").toArray()) {
+        const title = decode($2(chapter).text().trim()).replace(/\s+/g, " ").replace(/\n/g, " ");
+        const date = "";
         const id = title.match(/\d+/g)[0] ?? "";
         const chapterNumber = parseInt(id);
         if (!id || typeof id === "undefined") {
@@ -19633,13 +19637,13 @@ var _Sources = (() => {
       const pages = [];
       let pagesWithId = [];
       for (const img of $2("div.chapter-image-container").parent().toArray()) {
-        pagesWithId.push({ id: $2(img).attr("data-order"), img: this.getImageSrc($2(img)) });
+        pagesWithId.push({ id: $2(img).attr("data-order"), img: this.getImageSrc($2("img", img)) });
       }
       pagesWithId.sort((a, b) => {
         return parseInt(a.id) - parseInt(b.id);
       });
       for (const page of pagesWithId) {
-        pages.push(pagesWithId.img);
+        pages.push(page.img);
       }
       const chapterDetails = App.createChapterDetails({
         id: chapterId,
@@ -19684,6 +19688,7 @@ var _Sources = (() => {
     }
     async parseHomeSection($2, section, source) {
       const items = [];
+      const existingIds = /* @__PURE__ */ new Set();
       const mangas = section.selectorFunc($2);
       if (!mangas.length) {
         console.log(`Unable to parse valid ${section.section.title} section!`);
@@ -19702,6 +19707,11 @@ var _Sources = (() => {
           console.log(`Failed to parse homepage sections for ${source.baseUrl} title (${title}) mangaId (${mangaId})`);
           continue;
         }
+        if (existingIds.has(mangaId)) {
+          console.log(`Skipping duplicate mangaId: ${mangaId}`);
+          continue;
+        }
+        existingIds.add(mangaId);
         items.push(App.createPartialSourceManga({
           mangaId,
           image,
@@ -19737,24 +19747,27 @@ var _Sources = (() => {
       } else {
         image = "";
       }
-      image = this.extractBaseImageUrl(image);
+      if (image?.includes("/_next/")) {
+        image = this.extractBaseImageUrl(image);
+      }
       return encodeURI(decodeURI(decode(image?.trim())));
     }
     extractBaseImageUrl(optimizedUrl) {
       try {
-        const urlObject = new URL(optimizedUrl);
-        const params = urlObject.searchParams;
-        const encodedPath = params.get("url");
-        if (!encodedPath) {
-          console.error("Param\uFFFDtre 'url' non trouv\uFFFD dans l'URL.");
+        const match = optimizedUrl.match(/url=([^&]*)/);
+        if (!match || !match[1]) {
+          console.log("Missing 'url' param.");
           return null;
         }
+        const encodedPath = match[1];
         let decodedPath = decodeURIComponent(encodedPath);
-        decodedPath = decodedPath.replace(/\.(webp|png|jpg|jpeg|gif)$/i, "");
-        const finalUrl = urlObject.origin + decodedPath;
-        return finalUrl;
+        decodedPath = decodedPath.replace(/\.(webp|gif)$/i, "");
+        if (!decodedPath.includes(this.domain)) {
+          decodedPath = this.domain + decodedPath;
+        }
+        return decodedPath;
       } catch (e) {
-        console.error("Erreur lors de l'analyse de l'URL:", e);
+        console.log("Erreur lors de l'analyse de l'URL:", e);
         return null;
       }
     }
@@ -19774,7 +19787,7 @@ var _Sources = (() => {
   // src/PoseidonScans/PoseidonScans.ts
   var DOMAIN = "https://poseidon-scans.com";
   var PoseidonScansInfo = {
-    version: "0.0.1",
+    version: "1.0.0",
     name: "PoseidonScans",
     description: `Extension that pulls webtoons from ${DOMAIN}`,
     author: "MaksOuw",
@@ -19828,7 +19841,7 @@ var _Sources = (() => {
       this.baseUrl = DOMAIN;
       this.language = "\u{1F1EB}\u{1F1F7}";
       this.directoryPath = "serie";
-      this.parser = new PoseidonScansParser();
+      this.parser = new PoseidonScansParser(DOMAIN);
       this.homescreen_sections = {
         "highlighted_projects": {
           ...DefaultHomeSectionData,
@@ -19851,7 +19864,7 @@ var _Sources = (() => {
         "latest_update": {
           ...DefaultHomeSectionData,
           section: createHomeSection("latest_update", "Derni\xE8res sorties"),
-          selectorFunc: ($2) => $2("div.group/card", $2("body > main > div > main > section:nth-child(6) > div > div.lg:col-span-4")),
+          selectorFunc: ($2) => $2("div.w-full > div.relative", $2("body > main > div > main > section:nth-child(6) > div > div")),
           titleSelectorFunc: ($2, element) => $2("h3", element).text(),
           subtitleSelectorFunc: ($2, element) => void 0,
           getViewMoreItemsFunc: (page) => void 0,
