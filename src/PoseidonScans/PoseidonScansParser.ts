@@ -1,0 +1,314 @@
+import { Chapter, ChapterDetails, PartialSourceManga, SourceManga, Tag, TagSection } from "@paperback/types"
+import { Cheerio, CheerioAPI } from "cheerio"
+import { decode as decodeHTMLEntity } from 'html-entities'
+import { HomeSectionData } from "./PhenixScansHelpers"
+import moment from 'moment'
+
+export class PoseidonScansParser {
+	parseMangaDetails($: CheerioAPI, mangaId: string, source: any): SourceManga {
+        const titles: string[] = []
+        titles.push(decodeHTMLEntity($('h1.text-4xl').text().trim()))
+
+        const author = $('body > main > div > main > div.min-h-screen.bg-black > div > div.container.mx-auto.px-4.lg\:px-8.relative.z-10.-mt-32.lg\:-mt-48.pb-20 > div > div.lg\:col-span-3.flex.flex-col.gap-6 > div > div.bg-black.rounded-3xl.py-4.space-y-2 > div > div:nth-child(3) > span.text-white.font-bold.truncate.max-w-\[150px\]').text().trim()
+        const artist = $('body > main > div > main > div.min-h-screen.bg-black > div > div.container.mx-auto.px-4.lg\:px-8.relative.z-10.-mt-32.lg\:-mt-48.pb-20 > div > div.lg\:col-span-3.flex.flex-col.gap-6 > div > div.bg-black.rounded-3xl.py-4.space-y-2 > div > div:nth-child(4) > span.text-white.font-bold.truncate.max-w-\[150px\]').text().trim()
+        const image = this.getImageSrc($('img.project__cover'))
+        const description = decodeHTMLEntity($('p.text-gray-300').text().trim())
+
+        const arrayTags: Tag[] = []
+        for (const tag of $('a', 'body > main > div > main > div.min-h-screen.bg-black > div > div.container.mx-auto.px-4.lg\:px-8.relative.z-10.-mt-32.lg\:-mt-48.pb-20 > div > div.lg\:col-span-3.flex.flex-col.gap-6 > div > div.space-y-3 > div').toArray()) {
+            const label = $(tag).text().trim()
+            const id = this.idCleaner($(tag).attr('href') ?? '')
+            if (!id || !label) {
+                continue
+            }
+            arrayTags.push({ id, label })
+        }
+
+        const rawStatus = $(`body > main > div > main > div.min-h-screen.bg-black > div > div.container.mx-auto.px-4.lg\:px-8.relative.z-10.-mt-32.lg\:-mt-48.pb-20 > div > div.lg\:col-span-3.flex.flex-col.gap-6 > div > div.bg-black.rounded-3xl.py-4.space-y-2 > div > div:nth-child(1) > span.px-3.py-1.rounded-full.text-xs.font-bold.border.bg-green-500\/10.text-green-400.border-green-500\/20`).text().trim()
+        let status
+        switch (rawStatus.toLowerCase()) {
+            case source.manga_StatusTypes.ONGOING.toLowerCase():
+                status = 'Ongoing'
+                break
+            case source.manga_StatusTypes.COMPLETED.toLowerCase():
+                status = 'Completed'
+                break
+            case source.manga_StatusTypes.DROPPED.toLowerCase():
+                status = 'Dropped'
+                break
+            case source.manga_StatusTypes.PAUSED.toLowerCase():
+                status = 'Paused'
+                break
+            default:
+                status = 'Ongoing'
+                break
+        }
+
+        const tagSections: TagSection[] = [
+            App.createTagSection({
+                id: '0',
+                label: 'genres',
+                tags: arrayTags.map((x) => App.createTag(x))
+            })
+        ]
+
+        return App.createSourceManga({
+            id: mangaId,
+            mangaInfo: App.createMangaInfo({
+                titles,
+                image: image,
+                status,
+                author: author == '' ? 'Unknown' : author,
+                artist: artist == '' ? 'Unknown' : artist,
+                tags: tagSections,
+                desc: description
+            })
+        })
+    }
+
+    parseChapterList($: CheerioAPI, mangaId: string, source: any): Chapter[] {
+        const chapters: Chapter[] = []
+        let sortingIndex = 0
+        const language = source.language
+
+        for (const chapter of $('a.rounded-xl').toArray()) {
+            const title = decodeHTMLEntity($('span.text-white', chapter).text().trim()).replace(/\s+/g, ' ').replace(/\n/g, ' ')
+            const date = this.convertDate($('div.text-xs > span', chapter).text().trim())
+            const id = title.match(/\d+/g)[0] ?? ''
+            const chapterNumber = parseInt(id)
+            if (!id || typeof id === 'undefined') {
+                throw new Error(`Could not parse out ID when getting chapters for postId: ${mangaId}`)
+            }
+
+            chapters.push({
+                id: id,
+                langCode: language,
+                chapNum: chapterNumber,
+                name: title,
+                time: date,
+                sortingIndex,
+                volume: 0,
+                group: ''
+            })
+            sortingIndex--
+        }
+
+        if (chapters.length == 0) {
+            throw new Error(`Couldn't find any chapters for mangaId: ${mangaId}!`)
+        }
+
+        return chapters.map((chapter) => {
+            chapter.sortingIndex += chapters.length
+            return App.createChapter(chapter)
+        })
+    }
+
+    convertDate(dateString: string): Date {
+        const match = dateString.match(/(\d+)\s+(\w+)/i)
+        if (!match) {
+            console.log('Failed to parse chapter date! TO DEV: Please check if the entered months reflect the sites months')
+            return new Date()
+        }
+
+        const amount = parseInt(match[1], 10)
+        const unit = match[2].toLowerCase()
+
+        const unitMap: Record<string, moment.unitOfTime.DurationConstructor> = {
+            'sem': 'weeks',
+            'semaine': 'weeks', 'semaines': 'weeks',
+            'jour': 'days', 'jours': 'days', 'j': 'days',
+            'heure': 'hours', 'heures': 'hours', 'h': 'hours',
+            'minute': 'minutes', 'minutes': 'minutes',
+            'seconde': 'seconds', 'secondes': 'seconds', 'sec': 'seconds',
+            'mois': 'months',
+            'an': 'years', 'ans': 'years', 'année': 'years', 'années': 'years'
+        }
+
+        const mappedUnit = unitMap[unit]
+        if (!mappedUnit) {
+            console.log(`Unknown time unit: "${unit}" in date string: "${dateString}"`)
+            return new Date()
+        }
+
+        return moment().subtract(amount, mappedUnit).toDate()
+    }
+
+    parseChapterDetails($: CheerioAPI, mangaId: string, chapterId: string): ChapterDetails {
+        const pages: string[] = []
+        let pagesWithId: any[] = []
+
+        for (const img of $('div.chapter-image-container').parent().toArray()) {
+            pagesWithId.push({ id: $(img).attr('data-order'), img: this.getImageSrc($(img)) })
+        }
+
+        pagesWithId.sort((a, b) => {
+            return parseInt(a.id) - parseInt(b.id)
+        })
+
+        for (const page of pagesWithId) {
+            pages.push(pagesWithId.img)
+        }
+
+        const chapterDetails = App.createChapterDetails({
+            id: chapterId,
+            mangaId: mangaId,
+            pages: pages
+        })
+
+        return chapterDetails
+    }
+
+    parseTags($: CheerioAPI, genres: string): TagSection[] {
+        throw new Error('Not implemented')
+    
+        const tagSections: any[] = [
+            { id: '0', label: 'genres', tags: [] },
+            { id: '1', label: 'type', tags: [] },
+            { id: '2', label: 'status', tags: [] },
+            { id: '3', label: 'sort', tags: [] }
+        ]
+
+        const parsed = JSON.parse(genres)
+        if (parsed.success && Array.isArray(parsed.data)) {
+            parsed.data.forEach((genre: { _id: string; name: string }) => {
+                tagSections[0].tags.push(App.createTag({
+                    id: genre._id,
+                    label: genre.name
+                }));
+            });
+        }
+
+        const dropdowns = $('div.manga-list__filter-group').toArray()
+        for (let i = 1; i < 4; ++i) {
+            const sectionDropdown = dropdowns[i]
+            if (!sectionDropdown) {
+                continue
+            }
+
+            for (const tag of $('option', sectionDropdown).toArray()) {
+                const label = $(tag).attr('value')?.trim()
+                const id = `${tagSections[i].label}:${label}`
+
+                if (!id || !label) {
+                    continue
+                }
+
+                tagSections[i].tags.push(App.createTag({ id, label }))
+            }
+        }
+
+        return tagSections.map((x) => App.createTagSection(x))
+    }
+
+    async parseHomeSection($: CheerioAPI, section: HomeSectionData, source: any): Promise<PartialSourceManga[]> {
+        const items: PartialSourceManga[] = []
+
+        const mangas = section.selectorFunc($)
+        if (!mangas.length) {
+            console.log(`Unable to parse valid ${section.section.title} section!`)
+            return items
+        }
+
+        for (const manga of mangas.toArray()) {
+            const title = section.titleSelectorFunc($, manga)
+            const image = this.getImageSrc($('img', manga)) ?? ''
+            const subtitle = section.subtitleSelectorFunc($, manga) ?? ''
+            let slug: string = this.idCleaner($('a', manga).attr('href') ?? '')
+            if (slug === '') {
+                slug = this.idCleaner($(manga).attr('href') ?? '')
+            }
+            const mangaId: string = slug
+
+            if (!mangaId || !title) {
+                console.log(`Failed to parse homepage sections for ${source.baseUrl} title (${title}) mangaId (${mangaId})`)
+                continue
+            }
+
+            items.push(App.createPartialSourceManga({
+                mangaId,
+                image: image,
+                title: decodeHTMLEntity(title),
+                subtitle: decodeHTMLEntity(subtitle)
+            }))
+        }
+
+        return items
+    }
+
+    async parseSearchResults(json: string, source: any): Promise<any[]> {
+        throw new Error('Not implemented')
+
+        const results: any[] = []
+        const parsed = JSON.parse(json)
+        if (Array.isArray(parsed.mangas)) {
+            parsed.mangas.forEach((manga: { slug: string; title: string, coverImage: string }) => {
+                let mangaId: string = manga.slug
+                results.push({
+                    mangaId,
+                    image: `${source.baseUrl}/api/${manga.coverImage}`,
+                    title: decodeHTMLEntity(manga.title),
+                    subtitle: ''
+                })
+            })
+        }
+
+        return results
+    }
+
+    getImageSrc(imageObj: Cheerio<Element> | undefined): string {
+        let image: string | undefined
+        if ((typeof imageObj?.attr('src')) != 'undefined') {
+            image = imageObj?.attr('src')
+        }
+        else if ((typeof imageObj?.attr('data-cfsrc')) != 'undefined') {
+            image = imageObj?.attr('data-cfsrc')
+        }
+        else {
+            image = ''
+        }
+
+        image = this.extractBaseImageUrl(image)
+
+        return encodeURI(decodeURI(decodeHTMLEntity(image?.trim())))
+    }
+
+    extractBaseImageUrl(optimizedUrl: string): string | null {
+        try {
+            const urlObject = new URL(optimizedUrl);
+            const params = urlObject.searchParams;
+            const encodedPath = params.get('url');
+
+            if (!encodedPath) {
+                console.error("Paramètre 'url' non trouvé dans l'URL.");
+
+                return null;
+            }
+
+            let decodedPath = decodeURIComponent(encodedPath);
+            decodedPath = decodedPath.replace(/\.(webp|png|jpg|jpeg|gif)$/i, '');
+            const finalUrl = urlObject.origin + decodedPath;
+
+            return finalUrl;
+        } catch (e) {
+            console.error("Erreur lors de l'analyse de l'URL:", e);
+
+            return null;
+        }
+    }
+
+    protected idCleaner(str: string): string {
+        let cleanId: string = str
+        cleanId = cleanId.replace(/\/$/, '')
+        cleanId = cleanId.split('/').pop() ?? ''
+
+        return cleanId
+    }
+
+    isLastPage(json: string) {
+        const parsed = JSON.parse(json)
+
+        console.log(JSON.stringify(parsed.pagination))
+
+        return ! parsed.pagination.hasNextPage
+    }
+}
