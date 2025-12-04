@@ -21,11 +21,10 @@
 } from '@paperback/types'
 
 import * as cheerio from 'cheerio'
-import { createHomeSection, DefaultHomeSectionData, getFilterTagsBySection, getIncludedTagBySection, HomeSectionData } from './PhenixScansHelpers'
+import { createHomeSection, DefaultHomeSectionData, getFilterTagsBySection, getIncludedTagBySection, HomeSectionData } from './PoseidonScansHelpers'
 import { AnyNode } from 'domhandler'
 import { PoseidonScansParser } from './PoseidonScansParser'
 import { StatusTypes } from './PoseidonScansInterfaces'
-import { URLBuilder } from './UrlBuilder'
 
 const DOMAIN = 'https://poseidon-scans.com'
 
