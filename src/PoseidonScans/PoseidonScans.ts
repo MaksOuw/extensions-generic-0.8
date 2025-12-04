@@ -29,7 +29,7 @@ import { StatusTypes } from './PoseidonScansInterfaces'
 const DOMAIN = 'https://poseidon-scans.com'
 
 export const PoseidonScansInfo: SourceInfo = {
-    version: '0.0.1',
+    version: '1.0.0',
     name: 'PoseidonScans',
     description: `Extension that pulls webtoons from ${DOMAIN}`,
     author: 'MaksOuw',
