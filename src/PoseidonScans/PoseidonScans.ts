@@ -283,7 +283,8 @@ export class PoseidonScans implements ChapterProviding, HomePageSectionsProvidin
     }
 
     async constructSearchRequest(page: number, query: SearchRequest): Promise<any> {
-        let urlBuilder: URLBuilder = new URLBuilder(this.baseUrl)
+        throw new Error('Method not implemented.')
+        /*let urlBuilder: URLBuilder = new URLBuilder(this.baseUrl)
             .addPathComponent('api')
             .addPathComponent('front')
             .addPathComponent(this.directoryPath)
@@ -300,6 +301,6 @@ export class PoseidonScans implements ChapterProviding, HomePageSectionsProvidin
         return App.createRequest({
             url: urlBuilder.buildUrl({ addTrailingSlash: false, includeUndefinedParameters: false }),
             method: 'GET'
-        })
+        })*/
     }
 }

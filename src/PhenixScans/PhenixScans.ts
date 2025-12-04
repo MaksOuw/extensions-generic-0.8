@@ -21,7 +21,7 @@ import {
 } from '@paperback/types'
 
 import * as cheerio from 'cheerio'
-import { createHomeSection, DefaultHomeSectionData, getFilterTagsBySection, getIncludedTagBySection, HomeSectionData } from './PhenixScansHelpers'
+import { createHomeSection, DefaultHomeSectionData, getFilterTagsBySection, getIncludedTagBySection, HomeSectionData } from './PoseidonScansHelpers'
 import { AnyNode } from 'domhandler'
 import { PhenixScansParser } from './PhenixScansParser'
 import { StatusTypes } from './PhenixScansInterfaces'
