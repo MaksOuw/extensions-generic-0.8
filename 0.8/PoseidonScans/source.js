@@ -19958,6 +19958,17 @@ Please go to the homepage of <${this.baseUrl}> and press the cloud icon.`);
     async constructSearchRequest(page, query) {
       throw new Error("Method not implemented.");
     }
+    async getCloudflareBypassRequestAsync() {
+      return App.createRequest({
+        url: this.bypassPage || this.baseUrl,
+        method: "GET",
+        headers: {
+          "referer": `${this.baseUrl}/`,
+          "origin": `${this.baseUrl}/`,
+          "user-agent": await this.requestManager.getDefaultUserAgent()
+        }
+      });
+    }
   };
   return __toCommonJS(PoseidonScans_exports);
 })();
