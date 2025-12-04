@@ -1,21 +1,26 @@
 import { Chapter, ChapterDetails, PartialSourceManga, SourceManga, Tag, TagSection } from "@paperback/types"
 import { Cheerio, CheerioAPI } from "cheerio"
 import { decode as decodeHTMLEntity } from 'html-entities'
-import { HomeSectionData } from "./PhenixScansHelpers"
+import { HomeSectionData } from "./PoseidonScansHelpers"
 import moment from 'moment'
 
 export class PoseidonScansParser {
+    domain = ''
+    constructor(domain: string) {
+        this.domain = domain
+    }
+
 	parseMangaDetails($: CheerioAPI, mangaId: string, source: any): SourceManga {
         const titles: string[] = []
         titles.push(decodeHTMLEntity($('h1.text-4xl').text().trim()))
 
-        const author = $('body > main > div > main > div.min-h-screen.bg-black > div > div.container.mx-auto.px-4.lg\:px-8.relative.z-10.-mt-32.lg\:-mt-48.pb-20 > div > div.lg\:col-span-3.flex.flex-col.gap-6 > div > div.bg-black.rounded-3xl.py-4.space-y-2 > div > div:nth-child(3) > span.text-white.font-bold.truncate.max-w-\[150px\]').text().trim()
-        const artist = $('body > main > div > main > div.min-h-screen.bg-black > div > div.container.mx-auto.px-4.lg\:px-8.relative.z-10.-mt-32.lg\:-mt-48.pb-20 > div > div.lg\:col-span-3.flex.flex-col.gap-6 > div > div.bg-black.rounded-3xl.py-4.space-y-2 > div > div:nth-child(4) > span.text-white.font-bold.truncate.max-w-\[150px\]').text().trim()
-        const image = this.getImageSrc($('img.project__cover'))
+        const author = $('body > main > div > main > div.min-h-screen.bg-black > div > div.container.mx-auto > div > div.gap-6 > div > div.bg-black.rounded-3xl.py-4.space-y-2 > div > div:nth-child(3) > span.text-white').text().trim()
+        const artist = $('body > main > div > main > div.min-h-screen.bg-black > div > div.container.mx-auto > div > div.gap-6 > div > div.bg-black.rounded-3xl.py-4.space-y-2 > div > div:nth-child(4) > span.text-white').text().trim()
+        const image = this.getImageSrc($('img.object-cover'))
         const description = decodeHTMLEntity($('p.text-gray-300').text().trim())
 
         const arrayTags: Tag[] = []
-        for (const tag of $('a', 'body > main > div > main > div.min-h-screen.bg-black > div > div.container.mx-auto.px-4.lg\:px-8.relative.z-10.-mt-32.lg\:-mt-48.pb-20 > div > div.lg\:col-span-3.flex.flex-col.gap-6 > div > div.space-y-3 > div').toArray()) {
+        for (const tag of $('a', 'body > main > div > main > div.min-h-screen.bg-black > div > div.container.mx-auto > div > div.gap-6 > div > div.space-y-3 > div').toArray()) {
             const label = $(tag).text().trim()
             const id = this.idCleaner($(tag).attr('href') ?? '')
             if (!id || !label) {
@@ -24,7 +29,7 @@ export class PoseidonScansParser {
             arrayTags.push({ id, label })
         }
 
-        const rawStatus = $(`body > main > div > main > div.min-h-screen.bg-black > div > div.container.mx-auto.px-4.lg\:px-8.relative.z-10.-mt-32.lg\:-mt-48.pb-20 > div > div.lg\:col-span-3.flex.flex-col.gap-6 > div > div.bg-black.rounded-3xl.py-4.space-y-2 > div > div:nth-child(1) > span.px-3.py-1.rounded-full.text-xs.font-bold.border.bg-green-500\/10.text-green-400.border-green-500\/20`).text().trim()
+        const rawStatus = $(`body > main > div > main > div.min-h-screen.bg-black > div > div.container.mx-auto > div > div.gap-6 > div > div.bg-black.rounded-3xl.py-4.space-y-2 > div > div:nth-child(1) > span.px-3.py-1.rounded-full.text-xs`).text().trim()
         let status
         switch (rawStatus.toLowerCase()) {
             case source.manga_StatusTypes.ONGOING.toLowerCase():
@@ -71,9 +76,9 @@ export class PoseidonScansParser {
         let sortingIndex = 0
         const language = source.language
 
-        for (const chapter of $('a.rounded-xl').toArray()) {
-            const title = decodeHTMLEntity($('span.text-white', chapter).text().trim()).replace(/\s+/g, ' ').replace(/\n/g, ' ')
-            const date = this.convertDate($('div.text-xs > span', chapter).text().trim())
+        for (const chapter of $('li').toArray()) {
+            const title = decodeHTMLEntity($(chapter).text().trim()).replace(/\s+/g, ' ').replace(/\n/g, ' ')
+            const date = '';
             const id = title.match(/\d+/g)[0] ?? ''
             const chapterNumber = parseInt(id)
             if (!id || typeof id === 'undefined') {
@@ -121,7 +126,7 @@ export class PoseidonScansParser {
             'minute': 'minutes', 'minutes': 'minutes',
             'seconde': 'seconds', 'secondes': 'seconds', 'sec': 'seconds',
             'mois': 'months',
-            'an': 'years', 'ans': 'years', 'année': 'years', 'années': 'years'
+            'an': 'years', 'ans': 'years', 'annï¿½e': 'years', 'annï¿½es': 'years'
         }
 
         const mappedUnit = unitMap[unit]
@@ -138,7 +143,7 @@ export class PoseidonScansParser {
         let pagesWithId: any[] = []
 
         for (const img of $('div.chapter-image-container').parent().toArray()) {
-            pagesWithId.push({ id: $(img).attr('data-order'), img: this.getImageSrc($(img)) })
+            pagesWithId.push({ id: $(img).attr('data-order'), img: this.getImageSrc($('img', img)) })
         }
 
         pagesWithId.sort((a, b) => {
@@ -146,7 +151,7 @@ export class PoseidonScansParser {
         })
 
         for (const page of pagesWithId) {
-            pages.push(pagesWithId.img)
+            pages.push(page.img)
         }
 
         const chapterDetails = App.createChapterDetails({
@@ -202,6 +207,7 @@ export class PoseidonScansParser {
 
     async parseHomeSection($: CheerioAPI, section: HomeSectionData, source: any): Promise<PartialSourceManga[]> {
         const items: PartialSourceManga[] = []
+        const existingIds = new Set<string>()
 
         const mangas = section.selectorFunc($)
         if (!mangas.length) {
@@ -223,6 +229,12 @@ export class PoseidonScansParser {
                 console.log(`Failed to parse homepage sections for ${source.baseUrl} title (${title}) mangaId (${mangaId})`)
                 continue
             }
+
+            if (existingIds.has(mangaId)) {
+                console.log(`Skipping duplicate mangaId: ${mangaId}`)
+                continue
+            }
+            existingIds.add(mangaId)
 
             items.push(App.createPartialSourceManga({
                 mangaId,
@@ -267,31 +279,32 @@ export class PoseidonScansParser {
             image = ''
         }
 
-        image = this.extractBaseImageUrl(image)
+        if (image?.includes('/_next/')) {
+            image = this.extractBaseImageUrl(image)
+        }
 
         return encodeURI(decodeURI(decodeHTMLEntity(image?.trim())))
     }
 
     extractBaseImageUrl(optimizedUrl: string): string | null {
         try {
-            const urlObject = new URL(optimizedUrl);
-            const params = urlObject.searchParams;
-            const encodedPath = params.get('url');
-
-            if (!encodedPath) {
-                console.error("Paramètre 'url' non trouvé dans l'URL.");
-
+            const match = optimizedUrl.match(/url=([^&]*)/);
+            if (!match || !match[1]) {
+                console.log("Missing 'url' param.");
                 return null;
             }
 
+            const encodedPath = match[1];
             let decodedPath = decodeURIComponent(encodedPath);
-            decodedPath = decodedPath.replace(/\.(webp|png|jpg|jpeg|gif)$/i, '');
-            const finalUrl = urlObject.origin + decodedPath;
+            decodedPath = decodedPath.replace(/\.(webp|gif)$/i, '');
 
-            return finalUrl;
+            if (! decodedPath.includes(this.domain)) {
+                decodedPath = this.domain + decodedPath
+            }
+
+            return decodedPath;
         } catch (e) {
-            console.error("Erreur lors de l'analyse de l'URL:", e);
-
+            console.log("Erreur lors de l'analyse de l'URL:", e);
             return null;
         }
     }

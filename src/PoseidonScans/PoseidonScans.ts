@@ -90,9 +90,9 @@ export class PoseidonScans implements ChapterProviding, HomePageSectionsProvidin
     baseUrl: string = DOMAIN
     language = '🇫🇷'
     directoryPath = 'serie'
-    parser = new PoseidonScansParser()
+    parser = new PoseidonScansParser(DOMAIN)
     
-    homescreen_sections: Record<'highlighted_projects' | 'popular_today' | 'latest_update' | 'top_week_projects', HomeSectionData> = {
+    homescreen_sections: Record<'highlighted_projects' | 'popular_today' | 'latest_update', HomeSectionData> = {
         'highlighted_projects': {
             ...DefaultHomeSectionData,
             section: createHomeSection('highlighted_projects', 'Projets mis en avant', false, HomeSectionType.featured),
@@ -114,7 +114,7 @@ export class PoseidonScans implements ChapterProviding, HomePageSectionsProvidin
         'latest_update': {
             ...DefaultHomeSectionData,
             section: createHomeSection('latest_update', 'Dernières sorties'),
-            selectorFunc: ($: cheerio.CheerioAPI) => $('div.group/card', $('body > main > div > main > section:nth-child(6) > div > div.lg\:col-span-4')),
+            selectorFunc: ($: cheerio.CheerioAPI) => $('div.w-full > div.relative', $('body > main > div > main > section:nth-child(6) > div > div')),
             titleSelectorFunc: ($: cheerio.CheerioAPI, element: cheerio.BasicAcceptedElems<AnyNode>) => $('h3', element).text(),
             subtitleSelectorFunc: ($: cheerio.CheerioAPI, element: cheerio.BasicAcceptedElems<AnyNode>) => undefined,
             getViewMoreItemsFunc: (page: string) => undefined,
