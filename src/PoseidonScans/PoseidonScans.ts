@@ -214,12 +214,8 @@ export class PoseidonScans implements ChapterProviding, HomePageSectionsProvidin
         throw new Error('Method not implemented.')
     }
 
-    async getSearchResults(query: SearchRequest, metadata: any): Promise<PagedResults> {
-        throw new Error('Method not implemented.')
-
-        /*const page: number = metadata?.page ?? 1
-        
-        const request = await this.constructSearchRequest(page, query)
+    async getSearchResults(query: SearchRequest, metadata: any): Promise<PagedResults> {      
+        const request = await this.constructSearchRequest(query)
         const response = await this.requestManager.schedule(request, 1)
         this.checkResponseError(response)
         const results = await this.parser.parseSearchResults(response.data as string, this)
@@ -236,11 +232,10 @@ export class PoseidonScans implements ChapterProviding, HomePageSectionsProvidin
             }))
         }
 
-        metadata = !this.parser.isLastPage(response.data as string) ? { page: page + 1 } : undefined
         return App.createPagedResults({
             results: manga,
-            metadata
-        })*/
+            undefined
+        })
     }
 
     async getSearchTags?(): Promise<TagSection[]> {
@@ -281,26 +276,21 @@ export class PoseidonScans implements ChapterProviding, HomePageSectionsProvidin
         }
     }
 
-    async constructSearchRequest(page: number, query: SearchRequest): Promise<any> {
-        throw new Error('Method not implemented.')
-        /*let urlBuilder: URLBuilder = new URLBuilder(this.baseUrl)
-            .addPathComponent('api')
-            .addPathComponent('front')
-            .addPathComponent(this.directoryPath)
+    async constructSearchRequest(query: SearchRequest): Promise<any> {
+        let urlBuilder: URLBuilder = new URLBuilder(this.baseUrl)
+            .addPathComponent('series')
 
         urlBuilder = urlBuilder
-            .addQueryParameter('query', query?.title ?? '')
-            .addQueryParameter('page', page)
-            .addQueryParameter('limit', '18')
-            .addQueryParameter('genre', getFilterTagsBySection('genres', query?.includedTags, true))
-            .addQueryParameter('status', getIncludedTagBySection('status', query?.includedTags))
-            .addQueryParameter('type', getIncludedTagBySection('type', query?.includedTags))
-            .addQueryParameter('sort', getIncludedTagBySection('sort', query?.includedTags))
+            .addQueryParameter('search', query?.title ?? '')
+            .addQueryParameter('sortBy', 'recent')
+            .addQueryParameter('viewMode', 'list')
+            .addQueryParameter('minChapters', '0')
+            .addQueryParameter('maxChapters', '200')
 
         return App.createRequest({
             url: urlBuilder.buildUrl({ addTrailingSlash: false, includeUndefinedParameters: false }),
             method: 'GET'
-        })*/
+        })
     }
 
     async getCloudflareBypassRequestAsync() {

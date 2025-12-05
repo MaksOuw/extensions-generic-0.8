@@ -247,20 +247,21 @@ export class PoseidonScansParser {
         return items
     }
 
-    async parseSearchResults(json: string, source: any): Promise<any[]> {
-        throw new Error('Not implemented')
-
+    async parseSearchResults(html: string, source: any): Promise<any[]> {
         const results: any[] = []
-        const parsed = JSON.parse(json)
-        if (Array.isArray(parsed.mangas)) {
-            parsed.mangas.forEach((manga: { slug: string; title: string, coverImage: string }) => {
-                let mangaId: string = manga.slug
-                results.push({
-                    mangaId,
-                    image: `${source.baseUrl}/api/${manga.coverImage}`,
-                    title: decodeHTMLEntity(manga.title),
-                    subtitle: ''
-                })
+        const $ = cheerio.load(html)
+
+        for (const manga of $('a.block.group').toArray()) {
+            const title = decodeHTMLEntity($('h2', manga).text().trim()).replace(/\s+/g, ' ').replace(/\n/g, ' ')
+            const date = '';
+            const id = title
+            const img = this.getImageSrc($('img', manga)) ?? ''
+
+            results.push({
+                id,
+                image: img,
+                title: title,
+                subtitle: ''
             })
         }
 
