@@ -455,8 +455,8 @@ var _Sources = (() => {
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.urlEncodeObject = exports.convertTime = exports.Source = void 0;
       var Source = class {
-        constructor(cheerio) {
-          this.cheerio = cheerio;
+        constructor(cheerio2) {
+          this.cheerio = cheerio2;
         }
         /**
          * @deprecated use {@link Source.getSearchResults getSearchResults} instead
@@ -11022,9 +11022,9 @@ var _Sources = (() => {
       const initialRoot = parse6(content, internalOpts, isDocument2, null);
       class LoadedCheerio extends Cheerio {
         _make(selector, context) {
-          const cheerio = initialize(selector, context);
-          cheerio.prevObject = this;
-          return cheerio;
+          const cheerio2 = initialize(selector, context);
+          cheerio2.prevObject = this;
+          return cheerio2;
         }
         _parse(content2, options2, isDocument3, context) {
           return parse6(content2, options2, isDocument3, context);
@@ -19721,19 +19721,19 @@ var _Sources = (() => {
       }
       return items;
     }
-    async parseSearchResults(json, source) {
-      throw new Error("Not implemented");
+    async parseSearchResults(html3, source) {
       const results = [];
-      const parsed = JSON.parse(json);
-      if (Array.isArray(parsed.mangas)) {
-        parsed.mangas.forEach((manga) => {
-          let mangaId = manga.slug;
-          results.push({
-            mangaId,
-            image: `${source.baseUrl}/api/${manga.coverImage}`,
-            title: decode(manga.title),
-            subtitle: ""
-          });
+      const $2 = cheerio.load(html3);
+      for (const manga of $2("a.block.group").toArray()) {
+        const title = decode($2("h2", manga).text().trim()).replace(/\s+/g, " ").replace(/\n/g, " ");
+        const date = "";
+        const id = title;
+        const img = this.getImageSrc($2("img", manga)) ?? "";
+        results.push({
+          id,
+          image: img,
+          title,
+          subtitle: ""
         });
       }
       return results;
@@ -19949,7 +19949,24 @@ var _Sources = (() => {
       throw new Error("Method not implemented.");
     }
     async getSearchResults(query, metadata) {
-      throw new Error("Method not implemented.");
+      const request = await this.constructSearchRequest(query);
+      const response = await this.requestManager.schedule(request, 1);
+      this.checkResponseError(response);
+      const results = await this.parser.parseSearchResults(response.data, this);
+      const manga = [];
+      for (const result of results) {
+        let mangaId = result.mangaId;
+        manga.push(App.createPartialSourceManga({
+          mangaId,
+          image: result.image,
+          title: result.title,
+          subtitle: result.subtitle
+        }));
+      }
+      return App.createPagedResults({
+        results: manga,
+        undefined: void 0
+      });
     }
     async getSearchTags() {
       throw new Error("Method not implemented.");
@@ -19968,8 +19985,13 @@ Please go to the homepage of <${this.baseUrl}> and press the cloud icon.`);
           throw new Error(`The requested page ${response.request.url} was not found!`);
       }
     }
-    async constructSearchRequest(page, query) {
-      throw new Error("Method not implemented.");
+    async constructSearchRequest(query) {
+      let urlBuilder = new URLBuilder(this.baseUrl).addPathComponent("series");
+      urlBuilder = urlBuilder.addQueryParameter("search", query?.title ?? "").addQueryParameter("sortBy", "recent").addQueryParameter("viewMode", "list").addQueryParameter("minChapters", "0").addQueryParameter("maxChapters", "200");
+      return App.createRequest({
+        url: urlBuilder.buildUrl({ addTrailingSlash: false, includeUndefinedParameters: false }),
+        method: "GET"
+      });
     }
     async getCloudflareBypassRequestAsync() {
       return App.createRequest({
