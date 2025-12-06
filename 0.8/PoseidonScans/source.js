@@ -19727,7 +19727,8 @@ var _Sources = (() => {
       for (const manga of $2("a.block.group").toArray()) {
         const title = decode($2("h2", manga).text().trim()).replace(/\s+/g, " ").replace(/\n/g, " ");
         const date = "";
-        const mangaId = title.replace(/\s+/g, "-").replace("'", "").toLowerCase();
+        console.log(title);
+        const mangaId = title.replace(/\s+/g, "-").replace(/('|’)/g, "").toLowerCase();
         const img = this.getImageSrc($2("img", manga)) ?? "";
         results.push({
           mangaId,
@@ -19834,7 +19835,7 @@ var _Sources = (() => {
   // src/PoseidonScans/PoseidonScans.ts
   var DOMAIN = "https://poseidon-scans.com";
   var PoseidonScansInfo = {
-    version: "1.0.3",
+    version: "1.0.4",
     name: "PoseidonScans",
     description: `Extension that pulls webtoons from ${DOMAIN}`,
     author: "MaksOuw",
