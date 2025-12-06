@@ -455,8 +455,8 @@ var _Sources = (() => {
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.urlEncodeObject = exports.convertTime = exports.Source = void 0;
       var Source = class {
-        constructor(cheerio2) {
-          this.cheerio = cheerio2;
+        constructor(cheerio) {
+          this.cheerio = cheerio;
         }
         /**
          * @deprecated use {@link Source.getSearchResults getSearchResults} instead
@@ -11022,9 +11022,9 @@ var _Sources = (() => {
       const initialRoot = parse6(content, internalOpts, isDocument2, null);
       class LoadedCheerio extends Cheerio {
         _make(selector, context) {
-          const cheerio2 = initialize(selector, context);
-          cheerio2.prevObject = this;
-          return cheerio2;
+          const cheerio = initialize(selector, context);
+          cheerio.prevObject = this;
+          return cheerio;
         }
         _parse(content2, options2, isDocument3, context) {
           return parse6(content2, options2, isDocument3, context);
@@ -19723,14 +19723,15 @@ var _Sources = (() => {
     }
     async parseSearchResults(html3, source) {
       const results = [];
-      const $2 = cheerio.load(html3);
+      const $2 = load(html3);
       for (const manga of $2("a.block.group").toArray()) {
         const title = decode($2("h2", manga).text().trim()).replace(/\s+/g, " ").replace(/\n/g, " ");
+        console.log(title);
         const date = "";
-        const id = title;
+        const mangaId = title;
         const img = this.getImageSrc($2("img", manga)) ?? "";
         results.push({
-          id,
+          mangaId,
           image: img,
           title,
           subtitle: ""
@@ -19784,10 +19785,57 @@ var _Sources = (() => {
     }
   };
 
+  // src/UrlBuilder.ts
+  var URLBuilder = class {
+    constructor(baseUrl) {
+      this.parameters = {};
+      this.pathComponents = [];
+      this.baseUrl = baseUrl.replace(/(^\/)?(?=.*)(\/$)?/gim, "");
+    }
+    addPathComponent(component) {
+      this.pathComponents.push(component.replace(/(^\/)?(?=.*)(\/$)?/gim, ""));
+      return this;
+    }
+    addQueryParameter(key, value) {
+      if (Array.isArray(value) && !value.length) {
+        return this;
+      }
+      const array = this.parameters[key];
+      if (array?.length) {
+        array.push(value);
+      } else {
+        this.parameters[key] = value;
+      }
+      return this;
+    }
+    buildUrl({ addTrailingSlash, includeUndefinedParameters } = {
+      addTrailingSlash: false,
+      includeUndefinedParameters: false
+    }) {
+      let finalUrl = this.baseUrl + "/";
+      finalUrl += this.pathComponents.join("/");
+      finalUrl += addTrailingSlash ? "/" : "";
+      finalUrl += Object.values(this.parameters).length > 0 ? "?" : "";
+      finalUrl += Object.entries(this.parameters).map((entry) => {
+        if (entry[1] == null && !includeUndefinedParameters) {
+          return void 0;
+        }
+        if (Array.isArray(entry[1]) && entry[1].length) {
+          return entry[1].map((value) => value || includeUndefinedParameters ? `${entry[0]}${encodeURI("[]")}=${value}` : void 0).filter((x) => x !== void 0).join("&");
+        }
+        if (typeof entry[1] === "object") {
+          return Object.keys(entry[1]).map((key) => `${entry[0]}[${key}]=${entry[1][key]}`).join("&");
+        }
+        return `${entry[0]}=${entry[1]}`;
+      }).filter((x) => x !== void 0).join("&");
+      return finalUrl;
+    }
+  };
+
   // src/PoseidonScans/PoseidonScans.ts
   var DOMAIN = "https://poseidon-scans.com";
   var PoseidonScansInfo = {
-    version: "1.0.0",
+    version: "1.0.1",
     name: "PoseidonScans",
     description: `Extension that pulls webtoons from ${DOMAIN}`,
     author: "MaksOuw",
@@ -19995,7 +20043,7 @@ Please go to the homepage of <${this.baseUrl}> and press the cloud icon.`);
     }
     async getCloudflareBypassRequestAsync() {
       return App.createRequest({
-        url: this.bypassPage || this.baseUrl,
+        url: this.baseUrl,
         method: "GET",
         headers: {
           "referer": `${this.baseUrl}/`,
