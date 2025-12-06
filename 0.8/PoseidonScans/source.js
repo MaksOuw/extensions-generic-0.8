@@ -19726,9 +19726,8 @@ var _Sources = (() => {
       const $2 = load(html3);
       for (const manga of $2("a.block.group").toArray()) {
         const title = decode($2("h2", manga).text().trim()).replace(/\s+/g, " ").replace(/\n/g, " ");
-        console.log(title);
         const date = "";
-        const mangaId = title;
+        const mangaId = title.replace(/\s+/g, "-").toLowerCase();
         const img = this.getImageSrc($2("img", manga)) ?? "";
         results.push({
           mangaId,
