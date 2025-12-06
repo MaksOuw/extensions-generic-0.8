@@ -25,11 +25,12 @@ import { createHomeSection, DefaultHomeSectionData, getFilterTagsBySection, getI
 import { AnyNode } from 'domhandler'
 import { PoseidonScansParser } from './PoseidonScansParser'
 import { StatusTypes } from './PoseidonScansInterfaces'
+import { URLBuilder } from '../UrlBuilder'
 
 const DOMAIN = 'https://poseidon-scans.com'
 
 export const PoseidonScansInfo: SourceInfo = {
-    version: '1.0.0',
+    version: '1.0.1',
     name: 'PoseidonScans',
     description: `Extension that pulls webtoons from ${DOMAIN}`,
     author: 'MaksOuw',
@@ -295,7 +296,7 @@ export class PoseidonScans implements ChapterProviding, HomePageSectionsProvidin
 
     async getCloudflareBypassRequestAsync() {
         return App.createRequest({
-            url: this.bypassPage || this.baseUrl,
+            url: this.baseUrl,
             method: 'GET',
             headers: {
                 'referer': `${this.baseUrl}/`,

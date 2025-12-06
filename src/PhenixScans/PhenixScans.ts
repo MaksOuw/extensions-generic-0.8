@@ -25,12 +25,12 @@ import { createHomeSection, DefaultHomeSectionData, getFilterTagsBySection, getI
 import { AnyNode } from 'domhandler'
 import { PhenixScansParser } from './PhenixScansParser'
 import { StatusTypes } from './PhenixScansInterfaces'
-import { URLBuilder } from './UrlBuilder'
+import { URLBuilder } from '../UrlBuilder'
 
 const DOMAIN = 'https://phenix-scans.com'
 
 export const PhenixScansInfo: SourceInfo = {
-    version: '1.0.2',
+    version: '1.0.3',
     name: 'PhenixScans',
     description: `Extension that pulls webtoons from ${DOMAIN}`,
     author: 'MaksOuw',

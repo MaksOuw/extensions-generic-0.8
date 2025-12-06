@@ -1,5 +1,5 @@
 import { Chapter, ChapterDetails, PartialSourceManga, SourceManga, Tag, TagSection } from "@paperback/types"
-import { Cheerio, CheerioAPI } from "cheerio"
+import { Cheerio, CheerioAPI, load } from "cheerio"
 import { decode as decodeHTMLEntity } from 'html-entities'
 import { HomeSectionData } from "./PoseidonScansHelpers"
 import moment from 'moment'
@@ -249,16 +249,17 @@ export class PoseidonScansParser {
 
     async parseSearchResults(html: string, source: any): Promise<any[]> {
         const results: any[] = []
-        const $ = cheerio.load(html)
+        const $ = load(html)
 
         for (const manga of $('a.block.group').toArray()) {
             const title = decodeHTMLEntity($('h2', manga).text().trim()).replace(/\s+/g, ' ').replace(/\n/g, ' ')
+            console.log(title)
             const date = '';
-            const id = title
+            const mangaId = title
             const img = this.getImageSrc($('img', manga)) ?? ''
 
             results.push({
-                id,
+                mangaId,
                 image: img,
                 title: title,
                 subtitle: ''
