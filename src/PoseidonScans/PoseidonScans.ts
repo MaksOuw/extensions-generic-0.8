@@ -30,7 +30,7 @@ import { URLBuilder } from '../UrlBuilder'
 const DOMAIN = 'https://poseidon-scans.com'
 
 export const PoseidonScansInfo: SourceInfo = {
-    version: '1.0.1',
+    version: '1.0.3',
     name: 'PoseidonScans',
     description: `Extension that pulls webtoons from ${DOMAIN}`,
     author: 'MaksOuw',
