@@ -253,9 +253,8 @@ export class PoseidonScansParser {
 
         for (const manga of $('a.block.group').toArray()) {
             const title = decodeHTMLEntity($('h2', manga).text().trim()).replace(/\s+/g, ' ').replace(/\n/g, ' ')
-            console.log(title)
             const date = '';
-            const mangaId = title
+            const mangaId = title.replace(/\s+/g, '-').toLowerCase()
             const img = this.getImageSrc($('img', manga)) ?? ''
 
             results.push({
