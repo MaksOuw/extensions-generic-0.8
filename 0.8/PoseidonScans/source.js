@@ -19587,7 +19587,7 @@ var _Sources = (() => {
           volume: 0,
           group: ""
         });
-        sortingIndex--;
+        sortingIndex++;
       }
       if (chapters.length == 0) {
         throw new Error(`Couldn't find any chapters for mangaId: ${mangaId}!`);
@@ -19835,7 +19835,7 @@ var _Sources = (() => {
   // src/PoseidonScans/PoseidonScans.ts
   var DOMAIN = "https://poseidon-scans.com";
   var PoseidonScansInfo = {
-    version: "1.0.4",
+    version: "1.0.5",
     name: "PoseidonScans",
     description: `Extension that pulls webtoons from ${DOMAIN}`,
     author: "MaksOuw",
