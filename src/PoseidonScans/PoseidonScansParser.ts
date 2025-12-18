@@ -95,7 +95,7 @@ export class PoseidonScansParser {
                 volume: 0,
                 group: ''
             })
-            sortingIndex--
+            sortingIndex++
         }
 
         if (chapters.length == 0) {
