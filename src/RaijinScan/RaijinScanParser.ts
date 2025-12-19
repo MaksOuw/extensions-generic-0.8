@@ -53,19 +53,41 @@ export class RaijinScanParser extends Parser {
     }
 
     override async parseProtectedChapterDetails($: CheerioAPI, mangaId: string, chapterId: string, selector: string, source: any): Promise<ChapterDetails> {
-        const pages: string[] = []
-        
+        const pages: any[] = []
+
+        // 1️⃣ Priorité ISO Mihon : RMD + RMK
         try {
-            pages = this.decodeRMD($)
-                .map(p => encodeURI(p.replace(/^http:/, 'https:')))
-        } catch (e) {
+            const decodedPages = this.decodeRMD($)
+
+            for (const url of decodedPages) {
+                pages.push(App.createPage({
+                    url: encodeURI(url.replace(/^http:/, 'https:')),
+                    headers: {
+                        Referer: source.baseUrl,
+                        Accept: '*/*',
+                        'User-Agent': 'Paperback'
+                    }
+                }))
+            }
+        } catch {
             console.log(`Failed to decode RMD for ${mangaId} ${chapterId}`)
         }
 
+        // 2️⃣ Fallback RMT
         if (!pages.length) {
             try {
-                pages = this.decodeRMT($)
-                    .map(p => encodeURI(p.replace(/^http:/, 'https:')))
+                const decodedPages = this.decodeRMT($)
+
+                for (const url of decodedPages) {
+                    pages.push(App.createPage({
+                        url: encodeURI(url.replace(/^http:/, 'https:')),
+                        headers: {
+                            Referer: source.baseUrl,
+                            Accept: '*/*',
+                            'User-Agent': 'Paperback'
+                        }
+                    }))
+                }
             } catch {
                 console.log(`Failed to decode images for ${mangaId} ${chapterId}`)
             }
@@ -90,7 +112,7 @@ export class RaijinScanParser extends Parser {
             throw new Error('RMT data not found')
         }
 
-        const decoded = decodeBase64(match[1])
+        const decoded = decode(match[1])
         const pages = JSON.parse(decoded)
 
         if (!Array.isArray(pages)) {

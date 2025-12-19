@@ -15,7 +15,7 @@ import { RaijinScanParser } from './RaijinScanParser'
 const DOMAIN = 'https://raijin-scans.fr'
 
 export const RaijinScanInfo: SourceInfo = {
-    version: getExportVersion('1.0.1'),
+    version: getExportVersion('1.0.2'),
     name: 'RaijinScan',
     description: `Extension that pulls manga from ${DOMAIN}`,
     author: 'MaksOuw',
