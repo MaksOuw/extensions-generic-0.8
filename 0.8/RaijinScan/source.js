@@ -17176,14 +17176,40 @@ Please go to the homepage of <${this.baseUrl}> and press the cloud icon.`);
     }
     async parseProtectedChapterDetails($2, mangaId, chapterId, selector, source) {
       const pages = [];
-      for (const obj of $2(selector).get()) {
-        let page = (0, import_base_64.decode)(await this.getImageSrc($2(obj), source));
-        if (!page) {
-          console.log(`Could not parse pages for postId:${mangaId} chapterId:${chapterId}`);
-          continue;
+      try {
+        const decodedPages = this.decodeRMD($2);
+        for (const url of decodedPages) {
+          pages.push(App.createPage({
+            url: encodeURI(url.replace(/^http:/, "https:")),
+            headers: {
+              Referer: source.baseUrl,
+              Accept: "*/*",
+              "User-Agent": "Paperback"
+            }
+          }));
         }
-        page = page?.replace(/^http:/g, "https:");
-        pages.push(encodeURI(page));
+      } catch {
+        console.log(`Failed to decode RMD for ${mangaId} ${chapterId}`);
+      }
+      if (!pages.length) {
+        try {
+          const decodedPages = this.decodeRMT($2);
+          for (const url of decodedPages) {
+            pages.push(App.createPage({
+              url: encodeURI(url.replace(/^http:/, "https:")),
+              headers: {
+                Referer: source.baseUrl,
+                Accept: "*/*",
+                "User-Agent": "Paperback"
+              }
+            }));
+          }
+        } catch {
+          console.log(`Failed to decode images for ${mangaId} ${chapterId}`);
+        }
+      }
+      if (!pages.length) {
+        throw new Error(`No pages parsed for ${mangaId} chapter ${chapterId}`);
       }
       return App.createChapterDetails({
         id: chapterId,
@@ -17191,12 +17217,45 @@ Please go to the homepage of <${this.baseUrl}> and press the cloud icon.`);
         pages
       });
     }
+    decodeRMT($2) {
+      const html3 = $2.html();
+      const match = /window\._rmt\s*=\s*"([^"]+)"/.exec(html3);
+      if (!match) {
+        throw new Error("RMT data not found");
+      }
+      const decoded = (0, import_base_64.decode)(match[1]);
+      const pages = JSON.parse(decoded);
+      if (!Array.isArray(pages)) {
+        throw new Error("Invalid RMT payload");
+      }
+      return pages;
+    }
+    decodeRMD($2) {
+      const html3 = $2.html();
+      const rmdMatch = /window\._rmd\s*=\s*"([^"]+)"/.exec(html3);
+      const rmkMatch = /window\._rmk\s*=\s*"([^"]+)"/.exec(html3);
+      if (!rmdMatch || !rmkMatch) {
+        throw new Error("RMD or RMK not found");
+      }
+      const rmdBytes = Uint8Array.from((0, import_base_64.decode)(rmdMatch[1]), (c) => c.charCodeAt(0));
+      const rmkBytes = Uint8Array.from((0, import_base_64.decode)(rmkMatch[1]), (c) => c.charCodeAt(0));
+      const out = new Uint8Array(rmdBytes.length);
+      for (let i = 0; i < rmdBytes.length; i++) {
+        out[i] = rmdBytes[i] ^ rmkBytes[i % rmkBytes.length];
+      }
+      const decoded = String.fromCharCode(...out);
+      const pages = JSON.parse(decoded);
+      if (!Array.isArray(pages)) {
+        throw new Error("Invalid decoded RMD payload");
+      }
+      return pages;
+    }
   };
 
   // src/RaijinScan/RaijinScan.ts
   var DOMAIN = "https://raijin-scans.fr";
   var RaijinScanInfo = {
-    version: getExportVersion("1.0.1"),
+    version: getExportVersion("1.0.2"),
     name: "RaijinScan",
     description: `Extension that pulls manga from ${DOMAIN}`,
     author: "MaksOuw",
