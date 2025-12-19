@@ -55,14 +55,24 @@ export class RaijinScanParser extends Parser {
     override async parseProtectedChapterDetails($: CheerioAPI, mangaId: string, chapterId: string, selector: string, source: any): Promise<ChapterDetails> {
         const pages: string[] = []
         
-        for (const obj of $(selector).get()) {
-            let page = decode(await this.getImageSrc($(obj), source))
-            if (!page) {
-                console.log(`Could not parse pages for postId:${mangaId} chapterId:${chapterId}`)
-                continue
+        try {
+            pages = this.decodeRMD($)
+                .map(p => encodeURI(p.replace(/^http:/, 'https:')))
+        } catch (e) {
+            console.log(`Failed to decode RMD for ${mangaId} ${chapterId}`)
+        }
+
+        if (!pages.length) {
+            try {
+                pages = this.decodeRMT($)
+                    .map(p => encodeURI(p.replace(/^http:/, 'https:')))
+            } catch {
+                console.log(`Failed to decode images for ${mangaId} ${chapterId}`)
             }
-            page = page?.replace(/^http:/g, 'https:')
-            pages.push(encodeURI(page))
+        }
+
+        if (!pages.length) {
+            throw new Error(`No pages parsed for ${mangaId} chapter ${chapterId}`)
         }
 
         return App.createChapterDetails({
@@ -70,5 +80,52 @@ export class RaijinScanParser extends Parser {
             mangaId: mangaId,
             pages: pages
         })
+    }
+
+    private decodeRMT($: CheerioAPI): string[] {
+        const html = $.html()
+        const match = /window\._rmt\s*=\s*"([^"]+)"/.exec(html)
+
+        if (!match) {
+            throw new Error('RMT data not found')
+        }
+
+        const decoded = decodeBase64(match[1])
+        const pages = JSON.parse(decoded)
+
+        if (!Array.isArray(pages)) {
+            throw new Error('Invalid RMT payload')
+        }
+
+        return pages
+    }
+    
+    private decodeRMD($: CheerioAPI): string[] {
+        const html = $.html()
+
+        const rmdMatch = /window\._rmd\s*=\s*"([^"]+)"/.exec(html)
+        const rmkMatch = /window\._rmk\s*=\s*"([^"]+)"/.exec(html)
+
+        if (!rmdMatch || !rmkMatch) {
+            throw new Error('RMD or RMK not found')
+        }
+
+        const rmdBytes = Uint8Array.from(decode(rmdMatch[1]), c => c.charCodeAt(0))
+        const rmkBytes = Uint8Array.from(decode(rmkMatch[1]), c => c.charCodeAt(0))
+
+        const out = new Uint8Array(rmdBytes.length)
+
+        for (let i = 0; i < rmdBytes.length; i++) {
+            out[i] = rmdBytes[i] ^ rmkBytes[i % rmkBytes.length]
+        }
+
+        const decoded = String.fromCharCode(...out)
+        const pages = JSON.parse(decoded)
+
+        if (!Array.isArray(pages)) {
+            throw new Error('Invalid decoded RMD payload')
+        }
+
+        return pages
     }
 }
