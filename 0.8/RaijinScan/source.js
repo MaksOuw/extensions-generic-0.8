@@ -17161,7 +17161,7 @@ Please go to the homepage of <${this.baseUrl}> and press the cloud icon.`);
   // src/RaijinScan/RaijinScan.ts
   var DOMAIN = "https://raijin-scans.fr";
   var RaijinScanInfo = {
-    version: getExportVersion("1.0.2"),
+    version: getExportVersion("1.0.4"),
     name: "RaijinScan",
     description: `Extension that pulls manga from ${DOMAIN}`,
     author: "MaksOuw",
@@ -17188,6 +17188,7 @@ Please go to the homepage of <${this.baseUrl}> and press the cloud icon.`);
       this.chapterDetailsSelector = "img.preload-image";
       this.hasProtectedChapters = true;
       this.protectedChapterDataSelector = "div.protected-image-data";
+      this.bypassPage = `${DOMAIN}/manga/solo-leveling-scan-vf/`;
     }
   };
   return __toCommonJS(RaijinScan_exports);
