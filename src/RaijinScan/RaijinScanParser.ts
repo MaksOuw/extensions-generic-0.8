@@ -1,12 +1,8 @@
-import {
-    CheerioAPI,
-    Cheerio
-} from 'cheerio'
+import { CheerioAPI } from 'cheerio'
 import { Parser } from "./MadaraParser";
 import { decode as decodeHTMLEntity } from 'html-entities'
 import { decode } from 'base-64'
 import { SourceManga, Tag, TagSection } from "@paperback/types";
-import { convertDate } from '../Utils';
 
 export class RaijinScanParser extends Parser {
     override async parseMangaDetails($: CheerioAPI, mangaId: string, source: any): Promise<SourceManga> {
@@ -53,44 +49,50 @@ export class RaijinScanParser extends Parser {
     }
 
     override async parseProtectedChapterDetails($: CheerioAPI, mangaId: string, chapterId: string, selector: string, source: any): Promise<ChapterDetails> {
-        const pages: any[] = []
+        const pages: string[] = []
+        
+        for (const el of $(selector).toArray()) {
+            const node = $(el)
+            let page: string | null = null
 
-        // 1️⃣ Priorité ISO Mihon : RMD + RMK
-        try {
-            const decodedPages = this.decodeRMD($)
+            /** ───────────────
+             * 1️⃣ PROTECTED MODE (data-r + data-v + data-m)
+             * ─────────────── */
+            const dataR = node.attr('data-r')
+            const dataV = node.attr('data-v')
+            const dataM = node.attr('data-m')
 
-            for (const url of decodedPages) {
-                pages.push(App.createPage({
-                    url: encodeURI(url.replace(/^http:/, 'https:')),
-                    headers: {
-                        Referer: source.baseUrl,
-                        Accept: '*/*',
-                        'User-Agent': 'Paperback'
-                    }
-                }))
-            }
-        } catch {
-            console.log(`Failed to decode RMD for ${mangaId} ${chapterId}`)
-        }
-
-        // 2️⃣ Fallback RMT
-        if (!pages.length) {
-            try {
-                const decodedPages = this.decodeRMT($)
-
-                for (const url of decodedPages) {
-                    pages.push(App.createPage({
-                        url: encodeURI(url.replace(/^http:/, 'https:')),
-                        headers: {
-                            Referer: source.baseUrl,
-                            Accept: '*/*',
-                            'User-Agent': 'Paperback'
-                        }
-                    }))
+            if (dataR && dataV && dataM) {
+                try {
+                    page = this.decodeProtected(dataR, dataV, dataM)
+                    console.log("page : " + page)
+                } catch {
+                    page = null
                 }
-            } catch {
-                console.log(`Failed to decode images for ${mangaId} ${chapterId}`)
             }
+
+            /** ───────────────
+             * 2️⃣ BASE64 SRC FALLBACK
+             * ─────────────── */
+            if (!page) {
+                const dataSrc = node.attr('data-src')
+                page = this.decodeBase64Safe(dataSrc)
+            }
+
+            /** ───────────────
+             * 3️⃣ NORMAL <img src> FALLBACK
+             * ─────────────── */
+            if (!page) {
+                page = node.find('img').attr('src') ?? null
+            }
+
+            if (!page) {
+                console.log(`Could not resolve image for ${mangaId} ${chapterId}`)
+                continue
+            }
+
+            page = page.replace(/^http:/, 'https:')
+            pages.push(encodeURI(page))
         }
 
         if (!pages.length) {
@@ -104,50 +106,66 @@ export class RaijinScanParser extends Parser {
         })
     }
 
-    private decodeRMT($: CheerioAPI): string[] {
-        const html = $.html()
-        const match = /window\._rmt\s*=\s*"([^"]+)"/.exec(html)
-
-        if (!match) {
-            throw new Error('RMT data not found')
+    private decodeBase64Safe(input?: string): string | null {
+        if (!input) return null
+        try {
+            return this.bytesToString(this.base64ToBytes(input))
+        } catch {
+            return null
         }
-
-        const decoded = decode(match[1])
-        const pages = JSON.parse(decoded)
-
-        if (!Array.isArray(pages)) {
-            throw new Error('Invalid RMT payload')
-        }
-
-        return pages
     }
-    
-    private decodeRMD($: CheerioAPI): string[] {
-        const html = $.html()
 
-        const rmdMatch = /window\._rmd\s*=\s*"([^"]+)"/.exec(html)
-        const rmkMatch = /window\._rmk\s*=\s*"([^"]+)"/.exec(html)
+    private base64ToBytes(b64: string): Uint8Array {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
+        const lookup = new Uint8Array(256)
 
-        if (!rmdMatch || !rmkMatch) {
-            throw new Error('RMD or RMK not found')
+        for (let i = 0; i < chars.length; i++) {
+            lookup[chars.charCodeAt(i)] = i
         }
 
-        const rmdBytes = Uint8Array.from(decode(rmdMatch[1]), c => c.charCodeAt(0))
-        const rmkBytes = Uint8Array.from(decode(rmkMatch[1]), c => c.charCodeAt(0))
+        let bufferLength = b64.length * 0.75
+        if (b64.endsWith('==')) bufferLength -= 2
+        else if (b64.endsWith('=')) bufferLength -= 1
 
-        const out = new Uint8Array(rmdBytes.length)
+        const bytes = new Uint8Array(bufferLength)
 
-        for (let i = 0; i < rmdBytes.length; i++) {
-            out[i] = rmdBytes[i] ^ rmkBytes[i % rmkBytes.length]
+        let p = 0
+        for (let i = 0; i < b64.length; i += 4) {
+            const enc1 = lookup[b64.charCodeAt(i)]
+            const enc2 = lookup[b64.charCodeAt(i + 1)]
+            const enc3 = lookup[b64.charCodeAt(i + 2)]
+            const enc4 = lookup[b64.charCodeAt(i + 3)]
+
+            bytes[p++] = (enc1 << 2) | (enc2 >> 4)
+            if (enc3 !== 64)
+                bytes[p++] = ((enc2 & 15) << 4) | (enc3 >> 2)
+            if (enc4 !== 64)
+                bytes[p++] = ((enc3 & 3) << 6) | enc4
         }
 
-        const decoded = String.fromCharCode(...out)
-        const pages = JSON.parse(decoded)
+        return bytes
+    }
 
-        if (!Array.isArray(pages)) {
-            throw new Error('Invalid decoded RMD payload')
+    private bytesToString(bytes: Uint8Array): string {
+        let result = ''
+        for (let i = 0; i < bytes.length; i++) {
+            result += String.fromCharCode(bytes[i])
+        }
+        return result
+    }
+
+    private decodeProtected(dataR: string, dataV: string, dataM: string): string {
+        const rBytes = this.base64ToBytes(dataR.split('').reverse().join(''))
+        const vBytes = this.base64ToBytes(dataV)
+        const mBytes = this.base64ToBytes(dataM)
+
+        const len = Math.max(rBytes.length, vBytes.length, mBytes.length)
+        const out = new Uint8Array(len)
+
+        for (let i = 0; i < len; i++) {
+            out[i] = rBytes[i % rBytes.length] ^ vBytes[i % vBytes.length] ^ mBytes[i % mBytes.length]
         }
 
-        return pages
+        return this.bytesToString(out)
     }
 }
