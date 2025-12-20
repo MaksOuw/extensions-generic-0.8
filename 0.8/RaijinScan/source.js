@@ -1459,112 +1459,6 @@ var _Sources = (() => {
     }
   });
 
-  // node_modules/base-64/base64.js
-  var require_base64 = __commonJS({
-    "node_modules/base-64/base64.js"(exports, module) {
-      (function(root2) {
-        var freeExports = typeof exports == "object" && exports;
-        var freeModule = typeof module == "object" && module && module.exports == freeExports && module;
-        var freeGlobal = typeof global == "object" && global;
-        if (freeGlobal.global === freeGlobal || freeGlobal.window === freeGlobal) {
-          root2 = freeGlobal;
-        }
-        var InvalidCharacterError = function(message) {
-          this.message = message;
-        };
-        InvalidCharacterError.prototype = new Error();
-        InvalidCharacterError.prototype.name = "InvalidCharacterError";
-        var error = function(message) {
-          throw new InvalidCharacterError(message);
-        };
-        var TABLE = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-        var REGEX_SPACE_CHARACTERS = /[\t\n\f\r ]/g;
-        var decode3 = function(input) {
-          input = String(input).replace(REGEX_SPACE_CHARACTERS, "");
-          var length = input.length;
-          if (length % 4 == 0) {
-            input = input.replace(/==?$/, "");
-            length = input.length;
-          }
-          if (length % 4 == 1 || // http://whatwg.org/C#alphanumeric-ascii-characters
-          /[^+a-zA-Z0-9/]/.test(input)) {
-            error(
-              "Invalid character: the string to be decoded is not correctly encoded."
-            );
-          }
-          var bitCounter = 0;
-          var bitStorage;
-          var buffer;
-          var output = "";
-          var position = -1;
-          while (++position < length) {
-            buffer = TABLE.indexOf(input.charAt(position));
-            bitStorage = bitCounter % 4 ? bitStorage * 64 + buffer : buffer;
-            if (bitCounter++ % 4) {
-              output += String.fromCharCode(
-                255 & bitStorage >> (-2 * bitCounter & 6)
-              );
-            }
-          }
-          return output;
-        };
-        var encode = function(input) {
-          input = String(input);
-          if (/[^\0-\xFF]/.test(input)) {
-            error(
-              "The string to be encoded contains characters outside of the Latin1 range."
-            );
-          }
-          var padding = input.length % 3;
-          var output = "";
-          var position = -1;
-          var a;
-          var b;
-          var c;
-          var buffer;
-          var length = input.length - padding;
-          while (++position < length) {
-            a = input.charCodeAt(position) << 16;
-            b = input.charCodeAt(++position) << 8;
-            c = input.charCodeAt(++position);
-            buffer = a + b + c;
-            output += TABLE.charAt(buffer >> 18 & 63) + TABLE.charAt(buffer >> 12 & 63) + TABLE.charAt(buffer >> 6 & 63) + TABLE.charAt(buffer & 63);
-          }
-          if (padding == 2) {
-            a = input.charCodeAt(position) << 8;
-            b = input.charCodeAt(++position);
-            buffer = a + b;
-            output += TABLE.charAt(buffer >> 10) + TABLE.charAt(buffer >> 4 & 63) + TABLE.charAt(buffer << 2 & 63) + "=";
-          } else if (padding == 1) {
-            buffer = input.charCodeAt(position);
-            output += TABLE.charAt(buffer >> 2) + TABLE.charAt(buffer << 4 & 63) + "==";
-          }
-          return output;
-        };
-        var base64 = {
-          "encode": encode,
-          "decode": decode3,
-          "version": "1.0.0"
-        };
-        if (typeof define == "function" && typeof define.amd == "object" && define.amd) {
-          define(function() {
-            return base64;
-          });
-        } else if (freeExports && !freeExports.nodeType) {
-          if (freeModule) {
-            freeModule.exports = base64;
-          } else {
-            for (var key in base64) {
-              base64.hasOwnProperty(key) && (freeExports[key] = base64[key]);
-            }
-          }
-        } else {
-          root2.base64 = base64;
-        }
-      })(exports);
-    }
-  });
-
   // src/RaijinScan/RaijinScan.ts
   var RaijinScan_exports = {};
   __export(RaijinScan_exports, {
@@ -17135,7 +17029,6 @@ Please go to the homepage of <${this.baseUrl}> and press the cloud icon.`);
   };
 
   // src/RaijinScan/RaijinScanParser.ts
-  var import_base_64 = __toESM(require_base64());
   var RaijinScanParser = class extends Parser3 {
     async parseMangaDetails($2, mangaId, source) {
       const title = decode($2("h1.serie-title").text().trim());
@@ -17176,37 +17069,33 @@ Please go to the homepage of <${this.baseUrl}> and press the cloud icon.`);
     }
     async parseProtectedChapterDetails($2, mangaId, chapterId, selector, source) {
       const pages = [];
-      try {
-        const decodedPages = this.decodeRMD($2);
-        for (const url of decodedPages) {
-          pages.push(App.createPage({
-            url: encodeURI(url.replace(/^http:/, "https:")),
-            headers: {
-              Referer: source.baseUrl,
-              Accept: "*/*",
-              "User-Agent": "Paperback"
-            }
-          }));
-        }
-      } catch {
-        console.log(`Failed to decode RMD for ${mangaId} ${chapterId}`);
-      }
-      if (!pages.length) {
-        try {
-          const decodedPages = this.decodeRMT($2);
-          for (const url of decodedPages) {
-            pages.push(App.createPage({
-              url: encodeURI(url.replace(/^http:/, "https:")),
-              headers: {
-                Referer: source.baseUrl,
-                Accept: "*/*",
-                "User-Agent": "Paperback"
-              }
-            }));
+      for (const el of $2(selector).toArray()) {
+        const node = $2(el);
+        let page = null;
+        const dataR = node.attr("data-r");
+        const dataV = node.attr("data-v");
+        const dataM = node.attr("data-m");
+        if (dataR && dataV && dataM) {
+          try {
+            page = this.decodeProtected(dataR, dataV, dataM);
+            console.log("page : " + page);
+          } catch {
+            page = null;
           }
-        } catch {
-          console.log(`Failed to decode images for ${mangaId} ${chapterId}`);
         }
+        if (!page) {
+          const dataSrc = node.attr("data-src");
+          page = this.decodeBase64Safe(dataSrc);
+        }
+        if (!page) {
+          page = node.find("img").attr("src") ?? null;
+        }
+        if (!page) {
+          console.log(`Could not resolve image for ${mangaId} ${chapterId}`);
+          continue;
+        }
+        page = page.replace(/^http:/, "https:");
+        pages.push(encodeURI(page));
       }
       if (!pages.length) {
         throw new Error(`No pages parsed for ${mangaId} chapter ${chapterId}`);
@@ -17217,38 +17106,55 @@ Please go to the homepage of <${this.baseUrl}> and press the cloud icon.`);
         pages
       });
     }
-    decodeRMT($2) {
-      const html3 = $2.html();
-      const match = /window\._rmt\s*=\s*"([^"]+)"/.exec(html3);
-      if (!match) {
-        throw new Error("RMT data not found");
+    decodeBase64Safe(input) {
+      if (!input) return null;
+      try {
+        return this.bytesToString(this.base64ToBytes(input));
+      } catch {
+        return null;
       }
-      const decoded = (0, import_base_64.decode)(match[1]);
-      const pages = JSON.parse(decoded);
-      if (!Array.isArray(pages)) {
-        throw new Error("Invalid RMT payload");
-      }
-      return pages;
     }
-    decodeRMD($2) {
-      const html3 = $2.html();
-      const rmdMatch = /window\._rmd\s*=\s*"([^"]+)"/.exec(html3);
-      const rmkMatch = /window\._rmk\s*=\s*"([^"]+)"/.exec(html3);
-      if (!rmdMatch || !rmkMatch) {
-        throw new Error("RMD or RMK not found");
+    base64ToBytes(b64) {
+      const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+      const lookup = new Uint8Array(256);
+      for (let i = 0; i < chars.length; i++) {
+        lookup[chars.charCodeAt(i)] = i;
       }
-      const rmdBytes = Uint8Array.from((0, import_base_64.decode)(rmdMatch[1]), (c) => c.charCodeAt(0));
-      const rmkBytes = Uint8Array.from((0, import_base_64.decode)(rmkMatch[1]), (c) => c.charCodeAt(0));
-      const out = new Uint8Array(rmdBytes.length);
-      for (let i = 0; i < rmdBytes.length; i++) {
-        out[i] = rmdBytes[i] ^ rmkBytes[i % rmkBytes.length];
+      let bufferLength = b64.length * 0.75;
+      if (b64.endsWith("==")) bufferLength -= 2;
+      else if (b64.endsWith("=")) bufferLength -= 1;
+      const bytes = new Uint8Array(bufferLength);
+      let p = 0;
+      for (let i = 0; i < b64.length; i += 4) {
+        const enc1 = lookup[b64.charCodeAt(i)];
+        const enc2 = lookup[b64.charCodeAt(i + 1)];
+        const enc3 = lookup[b64.charCodeAt(i + 2)];
+        const enc4 = lookup[b64.charCodeAt(i + 3)];
+        bytes[p++] = enc1 << 2 | enc2 >> 4;
+        if (enc3 !== 64)
+          bytes[p++] = (enc2 & 15) << 4 | enc3 >> 2;
+        if (enc4 !== 64)
+          bytes[p++] = (enc3 & 3) << 6 | enc4;
       }
-      const decoded = String.fromCharCode(...out);
-      const pages = JSON.parse(decoded);
-      if (!Array.isArray(pages)) {
-        throw new Error("Invalid decoded RMD payload");
+      return bytes;
+    }
+    bytesToString(bytes) {
+      let result = "";
+      for (let i = 0; i < bytes.length; i++) {
+        result += String.fromCharCode(bytes[i]);
       }
-      return pages;
+      return result;
+    }
+    decodeProtected(dataR, dataV, dataM) {
+      const rBytes = this.base64ToBytes(dataR.split("").reverse().join(""));
+      const vBytes = this.base64ToBytes(dataV);
+      const mBytes = this.base64ToBytes(dataM);
+      const len = Math.max(rBytes.length, vBytes.length, mBytes.length);
+      const out = new Uint8Array(len);
+      for (let i = 0; i < len; i++) {
+        out[i] = rBytes[i % rBytes.length] ^ vBytes[i % vBytes.length] ^ mBytes[i % mBytes.length];
+      }
+      return this.bytesToString(out);
     }
   };
 
@@ -17286,9 +17192,4 @@ Please go to the homepage of <${this.baseUrl}> and press the cloud icon.`);
   };
   return __toCommonJS(RaijinScan_exports);
 })();
-/*! Bundled license information:
-
-base-64/base64.js:
-  (*! https://mths.be/base64 v1.0.0 by @mathias | MIT license *)
-*/
 this.Sources = _Sources; if (typeof exports === 'object' && typeof module !== 'undefined') {module.exports.Sources = this.Sources;}
