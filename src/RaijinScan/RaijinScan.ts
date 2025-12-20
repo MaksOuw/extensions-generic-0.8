@@ -15,7 +15,7 @@ import { RaijinScanParser } from './RaijinScanParser'
 const DOMAIN = 'https://raijin-scans.fr'
 
 export const RaijinScanInfo: SourceInfo = {
-    version: getExportVersion('1.0.2'),
+    version: getExportVersion('1.0.4'),
     name: 'RaijinScan',
     description: `Extension that pulls manga from ${DOMAIN}`,
     author: 'MaksOuw',
@@ -41,4 +41,5 @@ export class RaijinScan extends Madara {
     override chapterDetailsSelector = 'img.preload-image'
     override hasProtectedChapters = true
     override protectedChapterDataSelector: string = 'div.protected-image-data'
+    override bypassPage = `${DOMAIN}/manga/solo-leveling-scan-vf/`
 }

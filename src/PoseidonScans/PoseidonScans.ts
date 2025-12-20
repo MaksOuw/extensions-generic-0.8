@@ -30,7 +30,7 @@ import { URLBuilder } from '../UrlBuilder'
 const DOMAIN = 'https://poseidon-scans.com'
 
 export const PoseidonScansInfo: SourceInfo = {
-    version: '1.0.5',
+    version: '1.0.6',
     name: 'PoseidonScans',
     description: `Extension that pulls webtoons from ${DOMAIN}`,
     author: 'MaksOuw',
@@ -296,7 +296,7 @@ export class PoseidonScans implements ChapterProviding, HomePageSectionsProvidin
 
     async getCloudflareBypassRequestAsync() {
         return App.createRequest({
-            url: this.baseUrl,
+            url: this.baseUrl + '/series/',
             method: 'GET',
             headers: {
                 'referer': `${this.baseUrl}/`,

@@ -1,7 +1,6 @@
 import { CheerioAPI } from 'cheerio'
 import { Parser } from "./MadaraParser";
 import { decode as decodeHTMLEntity } from 'html-entities'
-import { decode } from 'base-64'
 import { SourceManga, Tag, TagSection } from "@paperback/types";
 
 export class RaijinScanParser extends Parser {
