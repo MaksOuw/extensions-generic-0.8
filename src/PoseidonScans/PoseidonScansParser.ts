@@ -78,6 +78,9 @@ export class PoseidonScansParser {
 
         for (const chapter of $('li').toArray()) {
             const title = decodeHTMLEntity($(chapter).text().trim()).replace(/\s+/g, ' ').replace(/\n/g, ' ')
+            if (title.includes('Lire') && title.includes('scan VF') && title.includes('Genres:')) {
+                continue
+            }
             const date = '';
             const id = title.match(/\d+/g)[0] ?? ''
             const chapterNumber = parseInt(id)

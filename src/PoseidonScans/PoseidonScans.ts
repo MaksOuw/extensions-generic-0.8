@@ -13,7 +13,6 @@
     Request,
     Response,
     SearchRequest,
-    SearchResultsProviding,
     SourceInfo,
     SourceIntents,
     SourceManga,
@@ -21,7 +20,7 @@
 } from '@paperback/types'
 
 import * as cheerio from 'cheerio'
-import { createHomeSection, DefaultHomeSectionData, getFilterTagsBySection, getIncludedTagBySection, HomeSectionData } from './PoseidonScansHelpers'
+import { createHomeSection, DefaultHomeSectionData, HomeSectionData } from './PoseidonScansHelpers'
 import { AnyNode } from 'domhandler'
 import { PoseidonScansParser } from './PoseidonScansParser'
 import { StatusTypes } from './PoseidonScansInterfaces'
@@ -30,7 +29,7 @@ import { URLBuilder } from '../UrlBuilder'
 const DOMAIN = 'https://poseidon-scans.com'
 
 export const PoseidonScansInfo: SourceInfo = {
-    version: '1.0.6',
+    version: '1.0.7',
     name: 'PoseidonScans',
     description: `Extension that pulls webtoons from ${DOMAIN}`,
     author: 'MaksOuw',
@@ -105,7 +104,7 @@ export class PoseidonScans implements ChapterProviding, HomePageSectionsProvidin
         },
         'popular_today': {
             ...DefaultHomeSectionData,
-            section: createHomeSection('popular_today', 'Populaire aujourd\'hui'),
+            section: createHomeSection('popular_today', 'Populaire aujourd\'hui', false, HomeSectionType.singleRowLarge),
             selectorFunc: ($: cheerio.CheerioAPI) => $('a.block', $('body > main > div > main > section.w-full.px-8.pt-8')),
             titleSelectorFunc: ($: cheerio.CheerioAPI, element: cheerio.BasicAcceptedElems<AnyNode>) => $('h3', element).text(),
             subtitleSelectorFunc: ($: cheerio.CheerioAPI, element: cheerio.BasicAcceptedElems<AnyNode>) => undefined,
@@ -114,7 +113,7 @@ export class PoseidonScans implements ChapterProviding, HomePageSectionsProvidin
         },
         'latest_update': {
             ...DefaultHomeSectionData,
-            section: createHomeSection('latest_update', 'Dernières sorties'),
+            section: createHomeSection('latest_update', 'Dernières sorties', false, HomeSectionType.singleRowNormal),
             selectorFunc: ($: cheerio.CheerioAPI) => $('div.w-full > div.relative', $('body > main > div > main > section:nth-child(6) > div > div')),
             titleSelectorFunc: ($: cheerio.CheerioAPI, element: cheerio.BasicAcceptedElems<AnyNode>) => $('h3', element).text(),
             subtitleSelectorFunc: ($: cheerio.CheerioAPI, element: cheerio.BasicAcceptedElems<AnyNode>) => undefined,
