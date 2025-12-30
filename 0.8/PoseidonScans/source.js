@@ -19571,6 +19571,9 @@ var _Sources = (() => {
       const language = source.language;
       for (const chapter of $2("li").toArray()) {
         const title = decode($2(chapter).text().trim()).replace(/\s+/g, " ").replace(/\n/g, " ");
+        if (title.includes("Lire") && title.includes("scan VF") && title.includes("Genres:")) {
+          continue;
+        }
         const date = "";
         const id = title.match(/\d+/g)[0] ?? "";
         const chapterNumber = parseInt(id);
@@ -19835,7 +19838,7 @@ var _Sources = (() => {
   // src/PoseidonScans/PoseidonScans.ts
   var DOMAIN = "https://poseidon-scans.com";
   var PoseidonScansInfo = {
-    version: "1.0.6",
+    version: "1.0.7",
     name: "PoseidonScans",
     description: `Extension that pulls webtoons from ${DOMAIN}`,
     author: "MaksOuw",
@@ -19902,7 +19905,7 @@ var _Sources = (() => {
         },
         "popular_today": {
           ...DefaultHomeSectionData,
-          section: createHomeSection("popular_today", "Populaire aujourd'hui"),
+          section: createHomeSection("popular_today", "Populaire aujourd'hui", false, import_types3.HomeSectionType.singleRowLarge),
           selectorFunc: ($2) => $2("a.block", $2("body > main > div > main > section.w-full.px-8.pt-8")),
           titleSelectorFunc: ($2, element) => $2("h3", element).text(),
           subtitleSelectorFunc: ($2, element) => void 0,
@@ -19911,7 +19914,7 @@ var _Sources = (() => {
         },
         "latest_update": {
           ...DefaultHomeSectionData,
-          section: createHomeSection("latest_update", "Derni\xE8res sorties"),
+          section: createHomeSection("latest_update", "Derni\xE8res sorties", false, import_types3.HomeSectionType.singleRowNormal),
           selectorFunc: ($2) => $2("div.w-full > div.relative", $2("body > main > div > main > section:nth-child(6) > div > div")),
           titleSelectorFunc: ($2, element) => $2("h3", element).text(),
           subtitleSelectorFunc: ($2, element) => void 0,
