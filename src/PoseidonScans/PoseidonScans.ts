@@ -26,10 +26,10 @@ import { PoseidonScansParser } from './PoseidonScansParser'
 import { StatusTypes } from './PoseidonScansInterfaces'
 import { URLBuilder } from '../UrlBuilder'
 
-const DOMAIN = 'https://poseidon-scans.com'
+const DOMAIN = 'https://poseidon-scans.co'
 
 export const PoseidonScansInfo: SourceInfo = {
-    version: '1.0.7',
+    version: '1.0.8',
     name: 'PoseidonScans',
     description: `Extension that pulls webtoons from ${DOMAIN}`,
     author: 'MaksOuw',
