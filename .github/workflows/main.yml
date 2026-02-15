@@ -8,18 +8,14 @@ jobs:
     name: Bundle and Publish Sources
     runs-on: ubuntu-latest
 
-    strategy:
-      matrix:
-        node-version: [24.x]
-
     steps:
       - name: Checkout Branch
-        uses: actions/checkout@v4.1.2
+        uses: actions/checkout@v6
 
       - name: Setup Node.js environment
-        uses: actions/setup-node@v4.0.2
+        uses: actions/setup-node@v6
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: 24
       
       - name: Extract branch name
         shell: bash
@@ -27,7 +23,7 @@ jobs:
         id: extract_branch
 
       - name: Checkout existing bundles
-        uses: actions/checkout@v4.1.2
+        uses: actions/checkout@v6
         continue-on-error: true
         with:
           ref: gh-pages
