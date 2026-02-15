@@ -29,6 +29,8 @@ jobs:
           ref: gh-pages
           path: bundles
 
+      - run: node --version
+      - run: npm --version
       - run: npm install
       - run: npm run bundle -- --folder=${{ steps.extract_branch.outputs.branch }}
 
