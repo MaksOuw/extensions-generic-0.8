@@ -31,7 +31,7 @@ jobs:
 
       - run: node --version
       - run: npm --version
-      - run: npm install
+      - run: npm ci
       - run: npm run bundle -- --folder=${{ steps.extract_branch.outputs.branch }}
 
       - name: Deploy to GitHub Pages

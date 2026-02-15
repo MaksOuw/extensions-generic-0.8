@@ -122,6 +122,5 @@ docs
 # mac stuff
 .DS_Store
 todo
-package-lock.json
 
 .vs
