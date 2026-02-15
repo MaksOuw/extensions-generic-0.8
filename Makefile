@@ -7,5 +7,8 @@ update-bundle:
 log:
 	npm run logcat
 
+iphone-log:
+	npm run iphone-logcat
+
 up:
 	npm run watch

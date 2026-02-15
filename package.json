@@ -10,6 +10,7 @@
     "watch": "npx paperback serve --watch",
     "test": "npx paperback test",
     "logcat": "npx paperback logcat --ip=127.0.0.1",
+    "iphone-logcat": "npx paperback logcat --ip=192.168.1.55",
     "nodemon": "nodemon"
   },
   "author": "MaksOuw",
