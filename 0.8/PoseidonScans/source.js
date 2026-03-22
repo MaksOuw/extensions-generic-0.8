@@ -19390,9 +19390,9 @@ var _Sources = (() => {
   };
 
   // src/PoseidonScans/PoseidonScans.ts
-  var DOMAIN = "https://poseidon-scans.co";
+  var DOMAIN = "https://poseidon-scans.net";
   var PoseidonScansInfo = {
-    version: "1.0.8",
+    version: "1.0.9",
     name: "PoseidonScans",
     description: `Extension that pulls webtoons from ${DOMAIN}`,
     author: "MaksOuw",
