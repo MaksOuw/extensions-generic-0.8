@@ -19069,7 +19069,7 @@ var _Sources = (() => {
       titles.push(decode($2("h1.text-4xl").text().trim()));
       const author = $2("body > main > div > main > div.min-h-screen.bg-black > div > div.container.mx-auto > div > div.gap-6 > div > div.bg-black.rounded-3xl.py-4.space-y-2 > div > div:nth-child(3) > span.text-white").text().trim();
       const artist = $2("body > main > div > main > div.min-h-screen.bg-black > div > div.container.mx-auto > div > div.gap-6 > div > div.bg-black.rounded-3xl.py-4.space-y-2 > div > div:nth-child(4) > span.text-white").text().trim();
-      const image = this.getImageSrc($2("img.object-cover"));
+      const image = this.getImageSrc($2("img.object-cover")).replace(".webp", ".png");
       const description = decode($2("p.text-gray-300").text().trim());
       const arrayTags = [];
       for (const tag of $2("a", "body > main > div > main > div.min-h-screen.bg-black > div > div.container.mx-auto > div > div.gap-6 > div > div.space-y-3 > div").toArray()) {
@@ -19119,21 +19119,47 @@ var _Sources = (() => {
         })
       });
     }
-    parseChapterList($2, mangaId, source) {
+    parseChapterList(html3, mangaId, source) {
       const chapters = [];
       let sortingIndex = 0;
       const language = source.language;
-      for (const chapter of $2("li").toArray()) {
-        const title = decode($2(chapter).text().trim()).replace(/\s+/g, " ").replace(/\n/g, " ");
-        if (title.includes("Lire") && title.includes("scan VF") && title.includes("Genres:")) {
-          continue;
+      const pushRegex = /self\.__next_f\.push\(\[1,"((?:[^"\\]|\\[\s\S])*)"\]\)/g;
+      let rscText = "";
+      let pushMatch;
+      while ((pushMatch = pushRegex.exec(html3)) !== null) {
+        try {
+          rscText += JSON.parse('"' + pushMatch[1] + '"');
+        } catch (e) {
         }
-        const date = "";
-        const id = title.match(/\d+/g)[0] ?? "";
-        const chapterNumber = parseInt(id);
-        if (!id || typeof id === "undefined") {
-          throw new Error(`Could not parse out ID when getting chapters for postId: ${mangaId}`);
+      }
+      const chaptersKey = '"chapters":';
+      const startIdx = rscText.indexOf(chaptersKey);
+      if (startIdx === -1) {
+        throw new Error(`Couldn't find chapters for mangaId: ${mangaId}!`);
+      }
+      const arrayStart = startIdx + chaptersKey.length;
+      const endIdx = rscText.indexOf(',"_count":', arrayStart);
+      if (endIdx === -1) {
+        throw new Error(`Couldn't find end of chapters for mangaId: ${mangaId}!`);
+      }
+      let chapterData;
+      try {
+        chapterData = JSON.parse(rscText.substring(arrayStart, endIdx));
+      } catch (e) {
+        throw new Error(`Failed to parse chapters JSON: ${e}`);
+      }
+      for (const chapter of chapterData) {
+        const chapterNumber = chapter.number;
+        const id = String(chapterNumber);
+        let title = `Chapitre ${chapterNumber}`;
+        if (chapter.title) {
+          title = chapter.title;
         }
+        if (chapter.isPremium && chapter.premiumUntil) {
+          const freeAt = new Date(chapter.premiumUntil.replace("$D", ""));
+          title += ` - Gratuit le ${freeAt.toLocaleDateString("fr-FR")}`;
+        }
+        const date = chapter.createdAt ? new Date(chapter.createdAt.replace("$D", "")) : /* @__PURE__ */ new Date();
         chapters.push({
           id,
           langCode: language,
@@ -19146,7 +19172,7 @@ var _Sources = (() => {
         });
         sortingIndex++;
       }
-      if (chapters.length == 0) {
+      if (chapters.length === 0) {
         throw new Error(`Couldn't find any chapters for mangaId: ${mangaId}!`);
       }
       return chapters.map((chapter) => {
@@ -19392,7 +19418,7 @@ var _Sources = (() => {
   // src/PoseidonScans/PoseidonScans.ts
   var DOMAIN = "https://poseidon-scans.net";
   var PoseidonScansInfo = {
-    version: "1.0.9",
+    version: "1.1.0",
     name: "PoseidonScans",
     description: `Extension that pulls webtoons from ${DOMAIN}`,
     author: "MaksOuw",
@@ -19460,7 +19486,7 @@ var _Sources = (() => {
         "popular_today": {
           ...DefaultHomeSectionData,
           section: createHomeSection("popular_today", "Populaire aujourd'hui", false, import_types3.HomeSectionType.singleRowLarge),
-          selectorFunc: ($2) => $2("a.block", $2("body > main > div > main > section.w-full.px-8.pt-8")),
+          selectorFunc: ($2) => $2("a.block", $2("body > main > div > main > section.pt-8")),
           titleSelectorFunc: ($2, element) => $2("h3", element).text(),
           subtitleSelectorFunc: ($2, element) => void 0,
           getViewMoreItemsFunc: (page) => void 0,
@@ -19493,17 +19519,27 @@ var _Sources = (() => {
     async getChapters(mangaId) {
       const request = App.createRequest({
         url: `${this.baseUrl}/${this.directoryPath}/${mangaId}/`,
-        method: "GET"
+        method: "GET",
+        headers: {
+          "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
+          "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+          "Accept-Language": "fr-FR,fr;q=0.9"
+        }
       });
       const response = await this.requestManager.schedule(request, 1);
       this.checkResponseError(response);
-      const $2 = load(response.data);
-      return this.parser.parseChapterList($2, mangaId, this);
+      const html3 = response.data;
+      return this.parser.parseChapterList(html3, mangaId, this);
     }
     async getChapterDetails(mangaId, chapterId) {
       const request = App.createRequest({
         url: `${this.baseUrl}/${this.directoryPath}/${mangaId}/chapter/${chapterId}`,
-        method: "GET"
+        method: "GET",
+        headers: {
+          "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
+          "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+          "Accept-Language": "fr-FR,fr;q=0.9"
+        }
       });
       const response = await this.requestManager.schedule(request, 1);
       this.checkResponseError(response);
@@ -19513,7 +19549,12 @@ var _Sources = (() => {
     async getMangaDetails(mangaId) {
       const request = App.createRequest({
         url: `${this.baseUrl}/${this.directoryPath}/${mangaId}/`,
-        method: "GET"
+        method: "GET",
+        headers: {
+          "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
+          "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+          "Accept-Language": "fr-FR,fr;q=0.9"
+        }
       });
       const response = await this.requestManager.schedule(request, 1);
       this.checkResponseError(response);
@@ -19526,7 +19567,12 @@ var _Sources = (() => {
     async getHomePageSections(sectionCallback) {
       const request = App.createRequest({
         url: `${this.baseUrl}/`,
-        method: "GET"
+        method: "GET",
+        headers: {
+          "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
+          "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+          "Accept-Language": "fr-FR,fr;q=0.9"
+        }
       });
       const response = await this.requestManager.schedule(request, 1);
       this.checkResponseError(response);
