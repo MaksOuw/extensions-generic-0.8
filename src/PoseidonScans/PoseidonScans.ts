@@ -29,7 +29,7 @@ import { URLBuilder } from '../UrlBuilder'
 const DOMAIN = 'https://poseidon-scans.net'
 
 export const PoseidonScansInfo: SourceInfo = {
-    version: '1.0.9',
+    version: '1.1.0',
     name: 'PoseidonScans',
     description: `Extension that pulls webtoons from ${DOMAIN}`,
     author: 'MaksOuw',
@@ -105,7 +105,7 @@ export class PoseidonScans implements ChapterProviding, HomePageSectionsProvidin
         'popular_today': {
             ...DefaultHomeSectionData,
             section: createHomeSection('popular_today', 'Populaire aujourd\'hui', false, HomeSectionType.singleRowLarge),
-            selectorFunc: ($: cheerio.CheerioAPI) => $('a.block', $('body > main > div > main > section.w-full.px-8.pt-8')),
+            selectorFunc: ($: cheerio.CheerioAPI) => $('a.block', $('body > main > div > main > section.pt-8')),
             titleSelectorFunc: ($: cheerio.CheerioAPI, element: cheerio.BasicAcceptedElems<AnyNode>) => $('h3', element).text(),
             subtitleSelectorFunc: ($: cheerio.CheerioAPI, element: cheerio.BasicAcceptedElems<AnyNode>) => undefined,
             getViewMoreItemsFunc: (page: string) => undefined,
@@ -134,20 +134,30 @@ export class PoseidonScans implements ChapterProviding, HomePageSectionsProvidin
     async getChapters(mangaId: string): Promise<Chapter[]> {
         const request = App.createRequest({
             url: `${this.baseUrl}/${this.directoryPath}/${mangaId}/`,
-            method: 'GET'
+            method: 'GET',
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                'Accept-Language': 'fr-FR,fr;q=0.9',
+            }
         })
 
         const response = await this.requestManager.schedule(request, 1)
         this.checkResponseError(response)
-        const $ = cheerio.load(response.data as string)
+        const html = response.data as string
 
-        return this.parser.parseChapterList($, mangaId, this)
+        return this.parser.parseChapterList(html, mangaId, this)
     }
 
     async getChapterDetails(mangaId: string, chapterId: string): Promise<ChapterDetails> {
         const request = App.createRequest({
             url: `${this.baseUrl}/${this.directoryPath}/${mangaId}/chapter/${chapterId}`,
-            method: 'GET'
+            method: 'GET',
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                'Accept-Language': 'fr-FR,fr;q=0.9',
+            }
         })
 
         const response = await this.requestManager.schedule(request, 1)
@@ -160,7 +170,12 @@ export class PoseidonScans implements ChapterProviding, HomePageSectionsProvidin
     async getMangaDetails(mangaId: string): Promise<SourceManga> {
         const request = App.createRequest({
             url: `${this.baseUrl}/${this.directoryPath}/${mangaId}/`,
-            method: 'GET'
+            method: 'GET',
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                'Accept-Language': 'fr-FR,fr;q=0.9',
+            }
         })
 
         const response = await this.requestManager.schedule(request, 1)
@@ -177,7 +192,12 @@ export class PoseidonScans implements ChapterProviding, HomePageSectionsProvidin
     async getHomePageSections(sectionCallback: (section: HomeSection) => void): Promise<void> {
         const request = App.createRequest({
             url: `${this.baseUrl}/`,
-            method: 'GET'
+            method: 'GET',
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                'Accept-Language': 'fr-FR,fr;q=0.9',
+            }
         })
 
         const response = await this.requestManager.schedule(request, 1)

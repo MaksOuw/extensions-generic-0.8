@@ -16,7 +16,7 @@ export class PoseidonScansParser {
 
         const author = $('body > main > div > main > div.min-h-screen.bg-black > div > div.container.mx-auto > div > div.gap-6 > div > div.bg-black.rounded-3xl.py-4.space-y-2 > div > div:nth-child(3) > span.text-white').text().trim()
         const artist = $('body > main > div > main > div.min-h-screen.bg-black > div > div.container.mx-auto > div > div.gap-6 > div > div.bg-black.rounded-3xl.py-4.space-y-2 > div > div:nth-child(4) > span.text-white').text().trim()
-        const image = this.getImageSrc($('img.object-cover'))
+        const image = this.getImageSrc($('img.object-cover')).replace('.webp', '.png')
         const description = decodeHTMLEntity($('p.text-gray-300').text().trim())
 
         const arrayTags: Tag[] = []
@@ -71,22 +71,62 @@ export class PoseidonScansParser {
         })
     }
 
-    parseChapterList($: CheerioAPI, mangaId: string, source: any): Chapter[] {
+    parseChapterList(html: string, mangaId: string, source: any): Chapter[] {
         const chapters: Chapter[] = []
         let sortingIndex = 0
         const language = source.language
 
-        for (const chapter of $('li').toArray()) {
-            const title = decodeHTMLEntity($(chapter).text().trim()).replace(/\s+/g, ' ').replace(/\n/g, ' ')
-            if (title.includes('Lire') && title.includes('scan VF') && title.includes('Genres:')) {
-                continue
+        // Extraire tous les blocs push([1, "..."])
+        // et les concaténer pour reconstituer le RSC payload complet
+        const pushRegex = /self\.__next_f\.push\(\[1,"((?:[^"\\]|\\[\s\S])*)"\]\)/g
+        let rscText = ''
+        let pushMatch
+        while ((pushMatch = pushRegex.exec(html)) !== null) {
+            try {
+                // JSON.parse('"..."') désechappe la string JS correctement
+                rscText += JSON.parse('"' + pushMatch[1] + '"')
+            } catch(e) {
+                // ignorer les blocs non parsables
             }
-            const date = '';
-            const id = title.match(/\d+/g)[0] ?? ''
-            const chapterNumber = parseInt(id)
-            if (!id || typeof id === 'undefined') {
-                throw new Error(`Could not parse out ID when getting chapters for postId: ${mangaId}`)
+        }
+
+        // Chercher "chapters": dans le RSC déseschappé
+        const chaptersKey = '"chapters":'
+        const startIdx = rscText.indexOf(chaptersKey)
+        if (startIdx === -1) {
+            throw new Error(`Couldn't find chapters for mangaId: ${mangaId}!`)
+        }
+
+        const arrayStart = startIdx + chaptersKey.length
+        const endIdx = rscText.indexOf(',"_count":', arrayStart)
+        if (endIdx === -1) {
+            throw new Error(`Couldn't find end of chapters for mangaId: ${mangaId}!`)
+        }
+
+        let chapterData: any[]
+        try {
+            chapterData = JSON.parse(rscText.substring(arrayStart, endIdx))
+        } catch (e) {
+            throw new Error(`Failed to parse chapters JSON: ${e}`)
+        }
+
+        for (const chapter of chapterData) {
+            const chapterNumber = chapter.number
+            const id = String(chapterNumber)
+
+            let title = `Chapitre ${chapterNumber}`
+            if (chapter.title) {
+                title = chapter.title
             }
+
+            if (chapter.isPremium && chapter.premiumUntil) {
+                const freeAt = new Date(chapter.premiumUntil.replace('$D', ''))
+                title += ` - Gratuit le ${freeAt.toLocaleDateString('fr-FR')}`
+            }
+
+            const date = chapter.createdAt
+                ? new Date(chapter.createdAt.replace('$D', ''))
+                : new Date()
 
             chapters.push({
                 id: id,
@@ -101,7 +141,7 @@ export class PoseidonScansParser {
             sortingIndex++
         }
 
-        if (chapters.length == 0) {
+        if (chapters.length === 0) {
             throw new Error(`Couldn't find any chapters for mangaId: ${mangaId}!`)
         }
 
