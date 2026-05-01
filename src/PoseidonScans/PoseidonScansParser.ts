@@ -73,7 +73,6 @@ export class PoseidonScansParser {
 
     parseChapterList(html: string, mangaId: string, source: any): Chapter[] {
         const chapters: Chapter[] = []
-        let sortingIndex = 0
         const language = source.language
 
         // Extraire tous les blocs push([1, "..."])
@@ -110,6 +109,8 @@ export class PoseidonScansParser {
             throw new Error(`Failed to parse chapters JSON: ${e}`)
         }
 
+		let sortingIndex = chapterData.length - 1
+
         for (const chapter of chapterData) {
             const chapterNumber = chapter.number
             const id = String(chapterNumber)
@@ -138,7 +139,7 @@ export class PoseidonScansParser {
                 volume: 0,
                 group: ''
             })
-            sortingIndex++
+            sortingIndex--
         }
 
         if (chapters.length === 0) {
