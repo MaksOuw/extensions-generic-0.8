@@ -19121,7 +19121,6 @@ var _Sources = (() => {
     }
     parseChapterList(html3, mangaId, source) {
       const chapters = [];
-      let sortingIndex = 0;
       const language = source.language;
       const pushRegex = /self\.__next_f\.push\(\[1,"((?:[^"\\]|\\[\s\S])*)"\]\)/g;
       let rscText = "";
@@ -19148,6 +19147,7 @@ var _Sources = (() => {
       } catch (e) {
         throw new Error(`Failed to parse chapters JSON: ${e}`);
       }
+      let sortingIndex = chapterData.length - 1;
       for (const chapter of chapterData) {
         const chapterNumber = chapter.number;
         const id = String(chapterNumber);
@@ -19170,7 +19170,7 @@ var _Sources = (() => {
           volume: 0,
           group: ""
         });
-        sortingIndex++;
+        sortingIndex--;
       }
       if (chapters.length === 0) {
         throw new Error(`Couldn't find any chapters for mangaId: ${mangaId}!`);
