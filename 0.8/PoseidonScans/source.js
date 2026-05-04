@@ -19157,7 +19157,7 @@ var _Sources = (() => {
         }
         if (chapter.isPremium && chapter.premiumUntil) {
           const freeAt = new Date(chapter.premiumUntil.replace("$D", ""));
-          title += ` - Gratuit le ${freeAt.toLocaleDateString("fr-FR")}`;
+          title += ` - Gratuit le ${freeAt.toLocaleDateString("fr-FR")} \xE0 ${freeAt.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}`;
         }
         const date = chapter.createdAt ? new Date(chapter.createdAt.replace("$D", "")) : /* @__PURE__ */ new Date();
         chapters.push({
@@ -19418,7 +19418,7 @@ var _Sources = (() => {
   // src/PoseidonScans/PoseidonScans.ts
   var DOMAIN = "https://poseidon-scans.net";
   var PoseidonScansInfo = {
-    version: "1.1.1",
+    version: "1.1.2",
     name: "PoseidonScans",
     description: `Extension that pulls webtoons from ${DOMAIN}`,
     author: "MaksOuw",
@@ -19501,15 +19501,6 @@ var _Sources = (() => {
           getViewMoreItemsFunc: (page) => void 0,
           sortIndex: 3
         }
-        /*'top_week_projects': {
-            ...DefaultHomeSectionData,
-            section: createHomeSection('top_week_projects', 'Top de la semaine'),
-            selectorFunc: ($: cheerio.CheerioAPI) => $('div.embla__slide', $('body > main > div > main > section:nth-child(6) > div > div.lg\:col-span-2.mt-8.lg\:mt-0 > div')),
-            titleSelectorFunc: ($: cheerio.CheerioAPI, element: cheerio.BasicAcceptedElems<AnyNode>) => $('h3', element).text(),
-            subtitleSelectorFunc: ($: cheerio.CheerioAPI, element: cheerio.BasicAcceptedElems<AnyNode>) => undefined,
-            getViewMoreItemsFunc: (page: string) => undefined,
-            sortIndex: 4
-        }*/
       };
       this.configureSections();
     }
