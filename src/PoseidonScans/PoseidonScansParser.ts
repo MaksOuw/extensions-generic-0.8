@@ -122,7 +122,7 @@ export class PoseidonScansParser {
 
             if (chapter.isPremium && chapter.premiumUntil) {
                 const freeAt = new Date(chapter.premiumUntil.replace('$D', ''))
-                title += ` - Gratuit le ${freeAt.toLocaleDateString('fr-FR')}`
+                title += ` - Gratuit le ${freeAt.toLocaleDateString('fr-FR')} à ${freeAt.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`
             }
 
             const date = chapter.createdAt
