@@ -28,7 +28,7 @@ import { URLBuilder } from '../UrlBuilder'
 const DOMAIN = 'https://poseidon-scans.net'
 
 export const PoseidonScansInfo: SourceInfo = {
-    version: '1.1.3',
+    version: '1.1.4',
     name: 'PoseidonScans',
     description: `Extension that pulls webtoons from ${DOMAIN}`,
     author: 'MaksOuw',
@@ -95,7 +95,7 @@ export class PoseidonScans implements ChapterProviding, HomePageSectionsProvidin
         'highlighted_projects': {
             ...DefaultHomeSectionData,
             section: createHomeSection('highlighted_projects', 'Projets mis en avant', false, HomeSectionType.featured),
-            selectorFunc: ($: cheerio.CheerioAPI) => $('div', $('body > main > div > main > section:nth-child(4)')),
+            selectorFunc: ($: cheerio.CheerioAPI) => $('div', $('body > main > div > main > div > section:nth-child(3)')),
             titleSelectorFunc: ($: cheerio.CheerioAPI, element: cheerio.BasicAcceptedElems<AnyNode>) => $('h3', element).text(),
             subtitleSelectorFunc: ($: cheerio.CheerioAPI, element: cheerio.BasicAcceptedElems<AnyNode>) => undefined,
             getViewMoreItemsFunc: (page: string) => undefined,
@@ -104,7 +104,7 @@ export class PoseidonScans implements ChapterProviding, HomePageSectionsProvidin
         'popular_today': {
             ...DefaultHomeSectionData,
             section: createHomeSection('popular_today', 'Populaire aujourd\'hui', false, HomeSectionType.singleRowLarge),
-            selectorFunc: ($: cheerio.CheerioAPI) => $('a.block', $('body > main > div > main > section.pt-8')),
+            selectorFunc: ($: cheerio.CheerioAPI) => $('a.block', $('body > main > div > main > div > section:nth-child(4)')),
             titleSelectorFunc: ($: cheerio.CheerioAPI, element: cheerio.BasicAcceptedElems<AnyNode>) => $('h3', element).text(),
             subtitleSelectorFunc: ($: cheerio.CheerioAPI, element: cheerio.BasicAcceptedElems<AnyNode>) => undefined,
             getViewMoreItemsFunc: (page: string) => undefined,
@@ -113,7 +113,7 @@ export class PoseidonScans implements ChapterProviding, HomePageSectionsProvidin
         'latest_update': {
             ...DefaultHomeSectionData,
             section: createHomeSection('latest_update', 'Dernières sorties', false, HomeSectionType.singleRowNormal),
-            selectorFunc: ($: cheerio.CheerioAPI) => $('div.w-full > div.relative', $('body > main > div > main > section:nth-child(6) > div > div')),
+            selectorFunc: ($: cheerio.CheerioAPI) => $('div.w-full > div.relative', $('body > main > div > main > div > section:nth-child(5) > div > div:nth-child(2)')),
             titleSelectorFunc: ($: cheerio.CheerioAPI, element: cheerio.BasicAcceptedElems<AnyNode>) => $('h3', element).text(),
             subtitleSelectorFunc: ($: cheerio.CheerioAPI, element: cheerio.BasicAcceptedElems<AnyNode>) => undefined,
             getViewMoreItemsFunc: (page: string) => undefined,
