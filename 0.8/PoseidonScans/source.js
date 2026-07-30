@@ -19418,7 +19418,7 @@ var _Sources = (() => {
   // src/PoseidonScans/PoseidonScans.ts
   var DOMAIN = "https://poseidon-scans.net";
   var PoseidonScansInfo = {
-    version: "1.1.3",
+    version: "1.1.4",
     name: "PoseidonScans",
     description: `Extension that pulls webtoons from ${DOMAIN}`,
     author: "MaksOuw",
@@ -19477,7 +19477,7 @@ var _Sources = (() => {
         "highlighted_projects": {
           ...DefaultHomeSectionData,
           section: createHomeSection("highlighted_projects", "Projets mis en avant", false, import_types3.HomeSectionType.featured),
-          selectorFunc: ($2) => $2("div", $2("body > main > div > main > section:nth-child(4)")),
+          selectorFunc: ($2) => $2("div", $2("body > main > div > main > div > section:nth-child(3)")),
           titleSelectorFunc: ($2, element) => $2("h3", element).text(),
           subtitleSelectorFunc: ($2, element) => void 0,
           getViewMoreItemsFunc: (page) => void 0,
@@ -19486,7 +19486,7 @@ var _Sources = (() => {
         "popular_today": {
           ...DefaultHomeSectionData,
           section: createHomeSection("popular_today", "Populaire aujourd'hui", false, import_types3.HomeSectionType.singleRowLarge),
-          selectorFunc: ($2) => $2("a.block", $2("body > main > div > main > section.pt-8")),
+          selectorFunc: ($2) => $2("a.block", $2("body > main > div > main > div > section:nth-child(4)")),
           titleSelectorFunc: ($2, element) => $2("h3", element).text(),
           subtitleSelectorFunc: ($2, element) => void 0,
           getViewMoreItemsFunc: (page) => void 0,
@@ -19495,7 +19495,7 @@ var _Sources = (() => {
         "latest_update": {
           ...DefaultHomeSectionData,
           section: createHomeSection("latest_update", "Derni\xE8res sorties", false, import_types3.HomeSectionType.singleRowNormal),
-          selectorFunc: ($2) => $2("div.w-full > div.relative", $2("body > main > div > main > section:nth-child(6) > div > div")),
+          selectorFunc: ($2) => $2("div.w-full > div.relative", $2("body > main > div > main > div > section:nth-child(5) > div > div:nth-child(2)")),
           titleSelectorFunc: ($2, element) => $2("h3", element).text(),
           subtitleSelectorFunc: ($2, element) => void 0,
           getViewMoreItemsFunc: (page) => void 0,
